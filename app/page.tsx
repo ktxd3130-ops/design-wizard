@@ -18,6 +18,7 @@ export default function MainLayout() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [finalPayload, setFinalPayload] = useState<any>(null);
     const [brandConfig, setBrandConfig] = useState<BrandConfig | null>(null);
+    const canvasId = useRef(`design-canvas-${Math.random().toString(36).substr(2, 9)}`);
 
     useEffect(() => {
         setMounted(true);
@@ -28,13 +29,28 @@ export default function MainLayout() {
             DynamicConfigLoader.applyThemeToDOM(config);
             setIsAdmin(params.get('mode') === 'admin');
         }
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
 
         if (canvasRef.current && !fabricRef.current) {
-            fabricRef.current = new FabricCanvas(canvasRef.current);
-            // Architect: Auto-trigger zoomToFit on mobile load
-            setTimeout(() => fabricRef.current?.zoomToFit(), 100);
+            // Wait for next tick so canvas dimensions explicitly match the client viewport
+            setTimeout(() => {
+                if (canvasRef.current && !fabricRef.current) {
+                    fabricRef.current = new FabricCanvas(canvasRef.current);
+                    fabricRef.current.zoomToFit();
+                }
+            }, 50);
         }
-    }, []);
+
+        return () => {
+            if (fabricRef.current) {
+                fabricRef.current.canvas.dispose();
+                fabricRef.current = null;
+            }
+        };
+    }, [mounted]);
 
     const handleAddText = () => {
         if (fabricRef.current) {
@@ -250,7 +266,13 @@ export default function MainLayout() {
                             <span className="text-pink-500/0 hover:text-pink-500/50 text-[10px] font-bold tracking-widest uppercase transition-colors">Safe Zone</span>
                         </div>
 
-                        <canvas ref={canvasRef} />
+                        <canvas
+                            ref={canvasRef}
+                            id={canvasId.current}
+                            width={designState.canvasWidth}
+                            height={designState.canvasHeight}
+                            className="bg-white"
+                        />
                     </div>
                 </div>
             </main>
