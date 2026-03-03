@@ -1,0 +1,49 @@
+import { DesignState, OpenMagePayload } from './types';
+import { useDesignStore } from './storage';
+
+export class OrderValidationService {
+    /**
+     * Evaluates the current design state to determine if it meets minimum
+     * production requirements for passing the OpenMage contract.
+     */
+    static validate(state: DesignState): boolean {
+        // If there are any high-severity production warnings (bleed, DPI), fail validation
+        if (state.warnings.some(w => w.type === 'dpi' || w.type === 'bleed')) {
+            return false;
+        }
+
+        // Must have at least one object
+        if (state.objects.length === 0) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+export function serializeForOpenMage(): OpenMagePayload {
+    const state = useDesignStore.getState().state;
+
+    // Integrator: Payload Minifier - Strip transient / local-only properties
+    const minifiedObjects = state.objects.map(obj => {
+        const { id, proxyUrl, isFontLoading, ...minified } = obj as any;
+        return minified;
+    });
+
+    // Create the final, compressed JSON payload
+    return {
+        design_id: state.design_id,
+        system_metadata: {
+            browser: typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown',
+            timestamp: new Date().toISOString(),
+            design_version: state.version
+        },
+        design_state: {
+            ...state,
+            objects: minifiedObjects,
+            sessionAssets: [], // OpenMage doesn't need pending session assets, only the final object S3 paths
+            activeObjectId: undefined // Cleanup
+        } as unknown as DesignState,
+        is_orderable: OrderValidationService.validate(state)
+    };
+}
