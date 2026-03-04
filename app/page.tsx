@@ -338,8 +338,6 @@ export default function MainLayout() {
                         <canvas
                             ref={canvasRef}
                             id={canvasId.current}
-                            width={designState.canvasWidth}
-                            height={designState.canvasHeight}
                             className="bg-white"
                         />
                     </div>
