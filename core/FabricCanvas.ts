@@ -109,6 +109,19 @@ export class FabricCanvas {
         if (selected) {
             useDesignStore.getState().syncCanvasState({ activeObjectId: (selected as any).id });
         }
+        this.updateActiveObjectBox();
+    }
+
+    private updateActiveObjectBox() {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            const rect = activeObj.getBoundingRect();
+            useDesignStore.getState().syncCanvasState({
+                activeObjectBox: { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+            });
+        } else {
+            useDesignStore.getState().syncCanvasState({ activeObjectBox: null });
+        }
     }
 
     private clearGuideLines() {
@@ -142,6 +155,8 @@ export class FabricCanvas {
             left: Math.round(target.left || 0),
             top: Math.round(target.top || 0)
         });
+
+        this.updateActiveObjectBox();
 
         // Ensure Production Metadata remains intact (e.g. tracking zIndex or specific types)
         // Update the Zustand store immediately so the UI is reacting in real-time (<200ms)
@@ -599,4 +614,17 @@ export class FabricCanvas {
             });
         return JSON.stringify(rawObjects, null, 2);
     }
+
+    public deleteSelected() {
+        const activeObjects = this.canvas.getActiveObjects();
+        if (activeObjects.length) {
+            this.canvas.discardActiveObject();
+            activeObjects.forEach(obj => {
+                this.canvas.remove(obj);
+            });
+            this.syncToStore();
+            this.updateActiveObjectBox();
+        }
+    }
+
 }

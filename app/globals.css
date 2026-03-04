@@ -14,3 +14,12 @@ body {
   height: 100vh;
   background-color: #f8fafc;
 }
+
+/* Integrator UX: Smooth 300ms transitions for Brand Theme color swaps */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}

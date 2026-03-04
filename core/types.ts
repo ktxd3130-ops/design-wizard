@@ -96,7 +96,6 @@ export interface DesignState {
   /** Global canvas height in pixels */
   canvasHeight: number;
   /** Background color hex */
-  /** Background color hex */
   backgroundColor: string;
   /** Global safe zone margin for production print readiness */
   safeZoneMargin: number;
@@ -104,6 +103,8 @@ export interface DesignState {
   activeObjectId?: string | null;
   /** Current brand for state isolation */
   brandId?: string | null;
+  /** Floating Bounding box coordinates for Contextual UI */
+  activeObjectBox?: { left: number, top: number, width: number, height: number } | null;
 }
 
 export interface OpenMageSystemMetadata {

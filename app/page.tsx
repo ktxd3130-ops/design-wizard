@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { useDesignStore } from '@/core/storage';
-import { Plus, Type, Image as ImageIcon, AlertTriangle, UploadCloud, Loader2, ShoppingCart, CheckCircle2, ChevronRight, Shield } from 'lucide-react';
+import { Plus, Type, Image as ImageIcon, AlertTriangle, UploadCloud, Loader2, ShoppingCart, CheckCircle2, ChevronRight, Shield, Trash, Copy } from 'lucide-react';
 import { SessionAsset } from '@/core/types';
 import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
 import { DynamicConfigLoader, BrandConfig } from '@/core/config';
@@ -71,6 +71,23 @@ export default function MainLayout() {
             setIsMobileSheetOpen(true);
         }
     }, [designState.activeObjectId]);
+
+    // Architect QA: Global Hotkeys
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            if (e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                handleAddText();
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                fabricRef.current?.deleteSelected();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const handleAddText = () => {
         if (fabricRef.current) {
@@ -282,9 +299,41 @@ export default function MainLayout() {
                 <div className="flex-1 flex items-center justify-center p-12 w-full">
                     <div className="relative shadow-2xl ring-1 ring-slate-900/5 bg-white transition-all transform hover:shadow-xl rounded-sm overflow-hidden flex" style={{ width: 800, height: 600 }}>
                         {/* Safe zone overlay (visual only, events passthrough) */}
-                        <div className="absolute inset-0 pointer-events-none border border-pink-500/0 hover:border-pink-500/30 transition-colors z-50 m-[20px] rounded-sm flex items-center justify-center">
+                        <div className="absolute inset-0 pointer-events-none border border-pink-500/0 hover:border-pink-500/30 transition-colors z-[40] m-[20px] rounded-sm flex items-center justify-center">
                             <span className="text-pink-500/0 hover:text-pink-500/50 text-[10px] font-bold tracking-widest uppercase transition-colors">Safe Zone</span>
                         </div>
+
+                        {/* Contextual Floating HUD */}
+                        {designState.activeObjectId && designState.activeObjectBox && (
+                            <div
+                                className="absolute z-50 flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl transition-all duration-150 ease-out pointer-events-auto"
+                                style={{
+                                    left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
+                                    top: designState.activeObjectBox.top - 60,
+                                    transform: 'translateX(-50%)'
+                                }}
+                            >
+                                <button className="w-5 h-5 rounded-full bg-slate-800 ring-2 ring-white shadow hover:scale-110 transition-transform cursor-pointer" title="Color" />
+                                <div className="w-[1px] h-4 bg-slate-300 mx-1" />
+                                <button className="text-slate-500 hover:text-brand-primary transition-colors cursor-pointer" title="Duplicate">
+                                    <Copy size={16} />
+                                </button>
+                                <button onClick={() => fabricRef.current?.deleteSelected()} className="text-slate-500 hover:text-red-500 transition-colors cursor-pointer" title="Delete">
+                                    <Trash size={16} />
+                                </button>
+
+                                {/* Production Agent: Warnings attached to HUD */}
+                                {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
+                                    <>
+                                        <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 rounded-md text-[10px] uppercase font-bold tracking-widest border border-red-100/50">
+                                            <AlertTriangle size={12} className="animate-pulse" />
+                                            {designState.warnings.find(w => w.objectId === designState.activeObjectId)?.type} Risk
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         <canvas
                             ref={canvasRef}

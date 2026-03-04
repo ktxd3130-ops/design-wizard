@@ -20,6 +20,7 @@ const initialState: DesignState = {
     warnings: [],
     activeObjectId: null,
     brandId: null,
+    activeObjectBox: null,
 };
 
 export const useDesignStore = create<DesignStore>()(
