@@ -298,7 +298,7 @@ export default function CanvasApp() {
                 </nav>
 
                 {/* ── Side Panel ── */}
-                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[#252536] border-r border-white/5 shrink-0`}>
+                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[#252536] border-r border-white/5 shrink-0 overflow-hidden`}>
                     <aside className="w-[300px] flex flex-col shrink-0 overflow-hidden absolute inset-y-0 left-0">
                         {/* Text Panel */}
                         {activePanel === 'text' && (
@@ -633,7 +633,7 @@ export default function CanvasApp() {
                             }
                         }}
                     >
-                        <div className="relative bg-white rounded shadow-2xl shadow-black/40" style={{ width: 800, height: 600 }}>
+                        <div className="relative bg-white rounded shadow-2xl shadow-black/40 inline-flex shrink-0">
                             {/* Floating HUD anchored locally to the canvas container */}
                             {designState.activeObjectId && designState.activeObjectBox && (
                                 <div

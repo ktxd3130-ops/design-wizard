@@ -83,7 +83,7 @@ export class FabricCanvas {
             if (zoom > 5) zoom = 5;
             if (zoom < 0.1) zoom = 0.1;
 
-            this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY } as fabric.Point, zoom);
+            this.canvas.setZoom(zoom);
 
             // Native DOM Scale Sync ("The White Box" Zoom)
             this.canvas.setDimensions({
@@ -91,37 +91,16 @@ export class FabricCanvas {
                 height: this.baseHeight * zoom
             });
 
+            // Prevent objects from sliding off the white background
+            const vpt = this.canvas.viewportTransform;
+            if (vpt) {
+                vpt[4] = 0;
+                vpt[5] = 0;
+            }
+
+            this.canvas.requestRenderAll();
             opt.e.preventDefault();
             opt.e.stopPropagation();
-        });
-
-        // Enable Canvas Background Panning
-        this.canvas.on('mouse:down', (opt) => {
-            const evt = opt.e as any;
-            if (!this.canvas.getActiveObject() && evt) {
-                this.isDragging = true;
-                this.lastPosX = evt.clientX || (evt.touches && evt.touches[0].clientX);
-                this.lastPosY = evt.clientY || (evt.touches && evt.touches[0].clientY);
-            }
-        });
-
-        this.canvas.on('mouse:move', (opt) => {
-            const evt = opt.e as any;
-            if (this.isDragging && evt) {
-                const clientX = evt.clientX || (evt.touches && evt.touches[0].clientX);
-                const clientY = evt.clientY || (evt.touches && evt.touches[0].clientY);
-
-                if (clientX !== undefined && clientY !== undefined) {
-                    const vpt = this.canvas.viewportTransform;
-                    if (vpt) {
-                        vpt[4] += clientX - this.lastPosX;
-                        vpt[5] += clientY - this.lastPosY;
-                        this.canvas.requestRenderAll();
-                        this.lastPosX = clientX;
-                        this.lastPosY = clientY;
-                    }
-                }
-            }
         });
 
         // UI-UX Agent QA: Track active object selection for Bottom Sheet routing
@@ -757,24 +736,39 @@ export class FabricCanvas {
      */
     public zoomToFit() {
         if (typeof window === 'undefined') return;
-        const vpw = window.innerWidth;
-        const mobilePadding = 40;
 
-        // If mobile portrait or tight space
-        if (vpw < this.canvas.getWidth()) {
-            const scale = (vpw - mobilePadding) / this.canvas.getWidth();
-            this.canvas.setZoom(scale);
+        const wrapper = this.canvas.getElement()?.closest('.overflow-auto');
+        let availableWidth = window.innerWidth - 400; // Safe fallback
+        let availableHeight = window.innerHeight - 150;
 
-            // Center pan horizontally over the grey zone
-            const vpt = this.canvas.viewportTransform;
-            if (vpt) {
-                vpt[4] = (vpw - (this.canvas.getWidth() * scale)) / 2;
-                vpt[5] = 40; // Top push
-            }
-        } else {
-            this.canvas.setZoom(1);
+        if (wrapper) {
+            // Padding gap of 96px total (48px per side)
+            availableWidth = wrapper.clientWidth - 96;
+            availableHeight = wrapper.clientHeight - 96;
         }
-        this.canvas.renderAll();
+
+        const scaleX = availableWidth / (this.baseWidth || 1);
+        const scaleY = availableHeight / (this.baseHeight || 1);
+
+        // Use the smaller scale so it fits entirely, but don't blow it up past 1x if it's small natively
+        const scale = Math.min(scaleX, scaleY, 1);
+
+        this.canvas.setZoom(scale);
+
+        // Native DOM Scale Sync ("The White Box" Zoom)
+        this.canvas.setDimensions({
+            width: this.baseWidth * scale,
+            height: this.baseHeight * scale
+        });
+
+        // Ensure internal pan is 0 so the DOM wrapper represents exact bounds
+        const vpt = this.canvas.viewportTransform;
+        if (vpt) {
+            vpt[4] = 0;
+            vpt[5] = 0;
+        }
+
+        this.canvas.requestRenderAll();
     }
 
     public setPlaceholderKey(key: string | undefined) {
