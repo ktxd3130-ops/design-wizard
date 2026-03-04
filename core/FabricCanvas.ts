@@ -200,6 +200,20 @@ export class FabricCanvas {
         }
     }
 
+    public resizeWorkspace(width: number, height: number) {
+        this.canvas.setDimensions({ width, height });
+
+        // Sync the new baseline to the store so the UI Property Panel updates
+        useDesignStore.getState().syncCanvasState({
+            canvasWidth: width,
+            canvasHeight: height
+        });
+
+        // Immediately reflow the viewport so the user sees the entire new product template
+        this.zoomToFit();
+        this.canvas.requestRenderAll();
+    }
+
     public toggleLock(id: string) {
         const obj = this.canvas.getObjects().find(o => (o as any).id === id);
         if (!obj) return;
