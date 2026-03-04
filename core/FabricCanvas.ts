@@ -395,13 +395,17 @@ export class FabricCanvas {
         this.canvas.requestRenderAll();
     }
 
-    public addText() {
-        const text = new fabric.Textbox('Your text here', {
+    public addText(
+        textStr: string = 'Your text here',
+        options: { fontSize?: number, fontWeight?: string | number } = {}
+    ) {
+        const text = new fabric.Textbox(textStr, {
             left: 100,
             top: 100,
             width: 250,
             fontFamily: 'sans-serif',
-            fontSize: 24,
+            fontSize: options.fontSize || 24,
+            fontWeight: options.fontWeight || 'normal',
             fill: '#000000',
             id: crypto.randomUUID(),
             autoSize: true,
@@ -431,6 +435,21 @@ export class FabricCanvas {
             activeObj.set('isFontLoading', false);
             this.syncToStore();
         }
+    }
+
+    public animateToTheme(primaryColor: string, fontFamily: string) {
+        const objs = this.canvas.getObjects();
+        objs.forEach(obj => {
+            if (obj.type === 'textbox' || obj.type === 'text') {
+                obj.set('fontFamily', fontFamily);
+                // For a smooth effect without a color interpolator, we set it and rely on the UI fading
+                obj.set('fill', primaryColor);
+            } else if (obj.type === 'path' || obj.type === 'rect' || obj.type === 'circle') {
+                obj.set('fill', primaryColor);
+            }
+        });
+        this.canvas.requestRenderAll();
+        setTimeout(() => this.syncToStore(), 300);
     }
 
     public async addImage(url: string, id: string) {

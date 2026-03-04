@@ -76,6 +76,9 @@ export default function CanvasApp() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            const activeObj = fabricRef.current?.canvas.getActiveObject() as any;
+            if (activeObj && activeObj.isEditing) return; // Ignore hotkeys if user is mid-typing
+
             if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); handleAddText(); }
             else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); fabricRef.current?.deleteSelected(); }
             else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); fabricRef.current?.copy(); }
@@ -86,7 +89,9 @@ export default function CanvasApp() {
     }, []);
 
     // ── Handlers ────────────────────────────────────────────────
-    const handleAddText = () => { fabricRef.current?.addText(); };
+    const handleAddText = (textStr: string = 'Your text here', options: { fontSize?: number, fontWeight?: string | number } = {}) => {
+        fabricRef.current?.addText(textStr, options);
+    };
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -291,7 +296,7 @@ export default function CanvasApp() {
                                     <input placeholder="Search fonts and combinations" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all" />
                                 </div>
 
-                                <button onClick={handleAddText} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
+                                <button onClick={() => handleAddText()} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
                                     <Type size={18} /> Add a text box
                                 </button>
 
@@ -313,13 +318,13 @@ export default function CanvasApp() {
                                 <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Default text styles</p>
 
                                 <div className="space-y-2">
-                                    <button onClick={() => { if (fabricRef.current) { fabricRef.current.addText(); } }} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                    <button onClick={() => handleAddText('Add a heading', { fontSize: 48, fontWeight: 'bold' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
                                         <span className="text-lg font-bold">Add a heading</span>
                                     </button>
-                                    <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                    <button onClick={() => handleAddText('Add a subheading', { fontSize: 32, fontWeight: 600 })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
                                         <span className="text-sm font-semibold">Add a subheading</span>
                                     </button>
-                                    <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                    <button onClick={() => handleAddText('Add a little bit of body text', { fontSize: 24, fontWeight: 'normal' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
                                         <span className="text-xs">Add a little bit of body text</span>
                                     </button>
                                 </div>
@@ -420,7 +425,16 @@ export default function CanvasApp() {
                                     { name: 'WallMonkeys', brand: 'wallmonkeys', color: '#f97316' },
                                     { name: 'HC Brands', brand: 'hcbrands', color: '#10b981' },
                                 ].map(b => (
-                                    <button key={b.brand} onClick={() => window.location.search = `?brand=${b.brand}`} className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                                    <button key={b.brand} onClick={(e) => {
+                                        e.preventDefault();
+                                        const config = DynamicConfigLoader.loadConfig(b.brand);
+                                        setBrandConfig(config);
+                                        DynamicConfigLoader.applyThemeToDOM(config);
+                                        if (fabricRef.current) {
+                                            fabricRef.current.animateToTheme(config.colors.primary, config.typography.defaultFont);
+                                        }
+                                        window.history.pushState({}, '', `?brand=${b.brand}${isAdmin ? '&mode=admin' : ''}`);
+                                    }} className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
                                         <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: b.color }} />
                                         <div className="text-left">
                                             <span className="text-sm font-semibold text-white/80 group-hover:text-white">{b.name}</span>
@@ -490,7 +504,15 @@ export default function CanvasApp() {
                 <main className="flex-1 flex flex-col bg-[#323247] overflow-hidden relative">
 
                     {/* Canvas viewport */}
-                    <div className="flex-1 flex items-center justify-center overflow-hidden p-8 relative">
+                    <div
+                        className="flex-1 flex items-center justify-center overflow-hidden p-8 relative"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget && fabricRef.current) {
+                                fabricRef.current.canvas.discardActiveObject();
+                                fabricRef.current.canvas.requestRenderAll();
+                            }
+                        }}
+                    >
                         {/* Floating HUD */}
                         {designState.activeObjectId && designState.activeObjectBox && (
                             <div
