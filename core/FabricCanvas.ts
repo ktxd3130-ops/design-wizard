@@ -94,7 +94,21 @@ export class FabricCanvas {
             }
         });
 
+        // UI-UX Agent QA: Track active object selection for Bottom Sheet routing
+        this.canvas.on('selection:created', (e) => this.handleSelection(e));
+        this.canvas.on('selection:updated', (e) => this.handleSelection(e));
+        this.canvas.on('selection:cleared', () => {
+            useDesignStore.getState().syncCanvasState({ activeObjectId: null });
+        });
+
         this.loadInitialState();
+    }
+
+    private handleSelection(e: any) {
+        const selected = e.selected?.[0];
+        if (selected) {
+            useDesignStore.getState().syncCanvasState({ activeObjectId: (selected as any).id });
+        }
     }
 
     private clearGuideLines() {
@@ -122,6 +136,12 @@ export class FabricCanvas {
         if (e.e && e.e.type === 'mousemove') {
             this.handleSnapping(target);
         }
+
+        // Architect QA: Eliminate sub-pixel blur post-modification
+        target.set({
+            left: Math.round(target.left || 0),
+            top: Math.round(target.top || 0)
+        });
 
         // Ensure Production Metadata remains intact (e.g. tracking zIndex or specific types)
         // Update the Zustand store immediately so the UI is reacting in real-time (<200ms)
@@ -566,14 +586,17 @@ export class FabricCanvas {
 
     public exportTemplateJSON(): string {
         // Strip down the current objects into a minimal enlivener array for the database
-        const rawObjects = this.canvas.getObjects().map(obj => {
-            const serialized = obj.toObject(['id', 'locked', 'autoSize', 'placeholderKey', 'proxyUrl', 'highResUrl', 's3Url']);
-            // Remove huge data paths if it's an image we just want the reference url
-            if (serialized.type === 'image' && serialized.src?.startsWith('data:')) {
-                serialized.src = serialized.proxyUrl;
-            }
-            return serialized;
-        });
+        // QA: Exclude locked layers from the user-editable template path
+        const rawObjects = this.canvas.getObjects()
+            .filter((obj: any) => !obj.locked)
+            .map(obj => {
+                const serialized = obj.toObject(['id', 'locked', 'autoSize', 'placeholderKey', 'proxyUrl', 'highResUrl', 's3Url']);
+                // Remove huge data paths if it's an image we just want the reference url
+                if (serialized.type === 'image' && serialized.src?.startsWith('data:')) {
+                    serialized.src = serialized.proxyUrl;
+                }
+                return serialized;
+            });
         return JSON.stringify(rawObjects, null, 2);
     }
 }

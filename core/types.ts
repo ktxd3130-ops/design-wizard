@@ -96,9 +96,14 @@ export interface DesignState {
   /** Global canvas height in pixels */
   canvasHeight: number;
   /** Background color hex */
+  /** Background color hex */
   backgroundColor: string;
   /** Global safe zone margin for production print readiness */
   safeZoneMargin: number;
+  /** Active object id selected in the canvas */
+  activeObjectId?: string | null;
+  /** Current brand for state isolation */
+  brandId?: string | null;
 }
 
 export interface OpenMageSystemMetadata {

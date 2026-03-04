@@ -18,6 +18,8 @@ const initialState: DesignState = {
     backgroundColor: '#ffffff',
     safeZoneMargin: 20,
     warnings: [],
+    activeObjectId: null,
+    brandId: null,
 };
 
 export const useDesignStore = create<DesignStore>()(

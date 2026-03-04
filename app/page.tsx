@@ -24,10 +24,23 @@ export default function MainLayout() {
         setMounted(true);
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
-            const config = DynamicConfigLoader.loadConfig(params.get('brand'));
+            const currentBrand = params.get('brand') || 'stickylife';
+            const config = DynamicConfigLoader.loadConfig(currentBrand);
             setBrandConfig(config);
             DynamicConfigLoader.applyThemeToDOM(config);
             setIsAdmin(params.get('mode') === 'admin');
+
+            // Integrator QA: Cross-Brand State Isolation
+            const storedBrand = useDesignStore.getState().state.brandId;
+            if (storedBrand && storedBrand !== currentBrand && useDesignStore.getState().state.objects.length > 0) {
+                if (window.confirm(`You are switching from ${storedBrand} to ${currentBrand}. Clear the current canvas to prevent asset bleeding?`)) {
+                    useDesignStore.getState().syncCanvasState({ objects: [], sessionAssets: [], warnings: [], brandId: currentBrand });
+                } else {
+                    useDesignStore.getState().syncCanvasState({ brandId: currentBrand });
+                }
+            } else if (!storedBrand) {
+                useDesignStore.getState().syncCanvasState({ brandId: currentBrand });
+            }
         }
     }, []);
 
@@ -51,6 +64,13 @@ export default function MainLayout() {
             }
         };
     }, [mounted]);
+
+    // UI-UX Agent QA: Auto-expand properties when layer is selected
+    useEffect(() => {
+        if (designState.activeObjectId) {
+            setIsMobileSheetOpen(true);
+        }
+    }, [designState.activeObjectId]);
 
     const handleAddText = () => {
         if (fabricRef.current) {
