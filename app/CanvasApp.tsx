@@ -1,17 +1,557 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FabricCanvas } from '@/core/FabricCanvas';
+import { useDesignStore } from '@/core/storage';
+import {
+    Type, Image as ImageIcon, AlertTriangle, UploadCloud, Loader2,
+    ShoppingCart, CheckCircle2, ChevronRight, Shield, Trash2, Copy,
+    Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
+    Minus, Plus, Undo2, Redo2, Share2, LayoutGrid, Layers,
+    Sparkles, Download, ZoomIn, ZoomOut, Search
+} from 'lucide-react';
+import { SessionAsset } from '@/core/types';
+import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
+import { DynamicConfigLoader, BrandConfig } from '@/core/config';
 
-const DynamicCanvasApp = dynamic(() => import('./CanvasApp'), {
-    ssr: false,
-    loading: () => (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-            <Loader2 size={32} className="animate-spin text-brand-primary" />
+type SidebarPanel = 'text' | 'uploads' | 'elements' | 'brand' | null;
+
+export default function CanvasApp() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fabricRef = useRef<FabricCanvas | null>(null);
+    const designState = useDesignStore((s) => s.state);
+    const [mounted, setMounted] = useState(false);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [finalPayload, setFinalPayload] = useState<any>(null);
+    const [brandConfig, setBrandConfig] = useState<BrandConfig | null>(null);
+    const [activePanel, setActivePanel] = useState<SidebarPanel>('text');
+    const [zoom, setZoom] = useState(100);
+    const canvasId = useRef(`design-canvas-${Math.random().toString(36).substr(2, 9)}`);
+
+    // ── Lifecycle ───────────────────────────────────────────────
+    useEffect(() => {
+        setMounted(true);
+        const params = new URLSearchParams(window.location.search);
+        const currentBrand = params.get('brand') || 'stickylife';
+        const config = DynamicConfigLoader.loadConfig(currentBrand);
+        setBrandConfig(config);
+        DynamicConfigLoader.applyThemeToDOM(config);
+        setIsAdmin(params.get('mode') === 'admin');
+
+        const storedBrand = useDesignStore.getState().state.brandId;
+        if (storedBrand && storedBrand !== currentBrand && useDesignStore.getState().state.objects.length > 0) {
+            if (window.confirm(`Switching from ${storedBrand} to ${currentBrand}. Clear canvas?`)) {
+                useDesignStore.getState().syncCanvasState({ objects: [], sessionAssets: [], warnings: [], brandId: currentBrand });
+            } else {
+                useDesignStore.getState().syncCanvasState({ brandId: currentBrand });
+            }
+        } else if (!storedBrand) {
+            useDesignStore.getState().syncCanvasState({ brandId: currentBrand });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+        if (canvasRef.current && !fabricRef.current) {
+            setTimeout(() => {
+                if (canvasRef.current && !fabricRef.current) {
+                    fabricRef.current = new FabricCanvas(canvasRef.current);
+                    fabricRef.current.zoomToFit();
+                }
+            }, 50);
+        }
+        return () => {
+            if (fabricRef.current) {
+                fabricRef.current.canvas.dispose();
+                fabricRef.current = null;
+            }
+        };
+    }, [mounted]);
+
+    // ── Global Hotkeys ──────────────────────────────────────────
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); handleAddText(); }
+            else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); fabricRef.current?.deleteSelected(); }
+            else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); fabricRef.current?.copy(); }
+            else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') { e.preventDefault(); fabricRef.current?.paste(); }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // ── Handlers ────────────────────────────────────────────────
+    const handleAddText = () => { fabricRef.current?.addText(); };
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const proxyUrl = URL.createObjectURL(file);
+        const assetId = crypto.randomUUID();
+        const newAsset: SessionAsset = { id: assetId, file, proxyUrl, status: 'uploading', progress: 0 };
+        useDesignStore.getState().syncCanvasState({ sessionAssets: [...designState.sessionAssets, newAsset] });
+        if (fabricRef.current) fabricRef.current.addImage(proxyUrl, assetId);
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 25;
+            if (progress >= 100) {
+                clearInterval(interval);
+                const state = useDesignStore.getState().state;
+                const updatedAssets = state.sessionAssets.map(a => a.id === assetId ? { ...a, status: 'staged' as const, progress: 100 } : a);
+                const updatedObjects = state.objects.map(obj => obj.id === assetId && obj.type === 'image' ? { ...obj, s3Url: `s3://staging-bucket/${file.name}` } : obj);
+                useDesignStore.getState().syncCanvasState({ sessionAssets: updatedAssets, objects: updatedObjects as any });
+            } else {
+                const state = useDesignStore.getState().state;
+                const updatedAssets = state.sessionAssets.map(a => a.id === assetId ? { ...a, progress } : a);
+                useDesignStore.getState().syncCanvasState({ sessionAssets: updatedAssets });
+            }
+        }, 500);
+        e.target.value = '';
+    };
+    const handleReviewClick = () => { setFinalPayload(serializeForOpenMage()); setIsReviewOpen(true); };
+    const togglePanel = (panel: SidebarPanel) => setActivePanel(prev => prev === panel ? null : panel);
+
+    // Find active text object
+    const activeObj = designState.objects.find(o => o.id === designState.activeObjectId) as any;
+    const isTextSelected = activeObj && (activeObj.type === 'textbox' || activeObj.type === 'text');
+
+    if (!mounted) return null;
+
+    // ────────────────────────────────────────────────────────────
+    // CANVA-LEVEL LAYOUT
+    // ────────────────────────────────────────────────────────────
+    return (
+        <div className="flex flex-col h-screen bg-[#1e1e2e] text-white overflow-hidden" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+
+            {/* ═══════════ TOP NAV BAR ═══════════ */}
+            <header className="h-[52px] bg-[#1e1e2e] border-b border-white/10 flex items-center px-4 gap-3 shrink-0 z-20">
+                {/* Left cluster */}
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                        <Sparkles size={16} className="text-white" />
+                    </div>
+                    <button className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">File</button>
+                    <button className="text-sm text-white/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                        <Sparkles size={12} /> Resize
+                    </button>
+                </div>
+
+                {/* Undo/Redo */}
+                <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-3">
+                    <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Undo2 size={16} /></button>
+                    <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Redo2 size={16} /></button>
+                </div>
+
+                {/* Center title */}
+                <div className="flex-1 flex justify-center">
+                    <span className="text-sm text-white/60 bg-white/5 px-4 py-1.5 rounded-lg border border-white/10">
+                        {brandConfig?.name || 'Design'} — Custom Design
+                    </span>
+                </div>
+
+                {/* Right actions */}
+                <div className="flex items-center gap-2">
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                const json = fabricRef.current?.exportTemplateJSON();
+                                if (!json) return;
+                                const blob = new Blob([json], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url;
+                                a.download = `template_${designState.design_id}.json`; a.click();
+                            }}
+                            className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            <Shield size={12} /> Export
+                        </button>
+                    )}
+                    <button className="flex items-center gap-1.5 text-sm bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors">
+                        <Share2 size={14} /> Share
+                    </button>
+                    <button
+                        onClick={handleReviewClick}
+                        className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg transition-colors font-medium shadow-lg shadow-violet-500/25"
+                    >
+                        <Download size={14} /> Add to Cart
+                    </button>
+                </div>
+            </header>
+
+            {/* ═══════════ CONTEXT TOOLBAR (appears when object is selected) ═══════════ */}
+            <div className="h-[48px] bg-[#2a2a3d] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+                {isTextSelected ? (
+                    <>
+                        {/* Font family */}
+                        <button className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-sm text-white/90 min-w-[140px] transition-colors">
+                            {activeObj.fontFamily || 'Sans Serif'} <ChevronRight size={12} className="text-white/40 rotate-90" />
+                        </button>
+                        {/* Font size */}
+                        <div className="flex items-center bg-white/10 rounded-lg overflow-hidden">
+                            <button className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Minus size={14} /></button>
+                            <span className="text-sm text-white/90 px-2 min-w-[32px] text-center">{Math.round(activeObj.fontSize || 24)}</span>
+                            <button className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Plus size={14} /></button>
+                        </div>
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        {/* Color dot */}
+                        <button className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Text Color" />
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        {/* B I U */}
+                        <button onClick={() => fabricRef.current?.canvas.getActiveObject()?.set('fontWeight', 'bold') && fabricRef.current?.canvas.requestRenderAll()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Bold size={16} /></button>
+                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Italic size={16} /></button>
+                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Underline size={16} /></button>
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        {/* Alignment */}
+                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignLeft size={16} /></button>
+                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignCenter size={16} /></button>
+                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignRight size={16} /></button>
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">Effects</button>
+                        <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">Animate</button>
+                        <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">Position</button>
+                    </>
+                ) : (
+                    <span className="text-xs text-white/30">Select an element to edit its properties</span>
+                )}
+
+                {/* Right side: warnings */}
+                <div className="ml-auto flex items-center gap-2">
+                    {designState.warnings.length > 0 && (
+                        <div className="flex items-center gap-1.5 bg-red-500/20 text-red-300 px-3 py-1 rounded-lg text-xs font-medium border border-red-500/30">
+                            <AlertTriangle size={12} /> {designState.warnings.length} Warning{designState.warnings.length > 1 ? 's' : ''}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ═══════════ MAIN CONTENT ═══════════ */}
+            <div className="flex flex-1 overflow-hidden">
+
+                {/* ── Icon Rail (far left) ── */}
+                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1 shrink-0">
+                    {[
+                        { id: 'elements' as SidebarPanel, icon: <LayoutGrid size={20} />, label: 'Elements' },
+                        { id: 'text' as SidebarPanel, icon: <Type size={20} />, label: 'Text' },
+                        { id: 'brand' as SidebarPanel, icon: <Sparkles size={20} />, label: 'Brand' },
+                        { id: 'uploads' as SidebarPanel, icon: <UploadCloud size={20} />, label: 'Uploads' },
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => togglePanel(item.id)}
+                            className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === item.id ? 'bg-violet-600/20 text-violet-300' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                        >
+                            {item.icon}
+                            {item.label}
+                        </button>
+                    ))}
+                    <div className="flex-1" />
+                    <button className="flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium text-white/40 hover:text-white/70 hover:bg-white/5 transition-all cursor-pointer">
+                        <Layers size={20} />
+                        Layers
+                    </button>
+                </nav>
+
+                {/* ── Side Panel ── */}
+                {activePanel && (
+                    <aside className="w-[300px] bg-[#252536] border-r border-white/5 flex flex-col shrink-0 overflow-hidden">
+                        {/* Text Panel */}
+                        {activePanel === 'text' && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="relative">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                                    <input placeholder="Search fonts and combinations" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all" />
+                                </div>
+
+                                <button onClick={handleAddText} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
+                                    <Type size={18} /> Add a text box
+                                </button>
+
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Default text styles</p>
+
+                                <button onClick={() => { if (fabricRef.current) { fabricRef.current.addText(); /* TODO: set heading size */ } }} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
+                                    <span className="text-lg font-bold text-white/90">Add a heading</span>
+                                </button>
+                                <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
+                                    <span className="text-sm font-semibold text-white/80">Add a subheading</span>
+                                </button>
+                                <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
+                                    <span className="text-xs text-white/60">Add a little bit of body text</span>
+                                </button>
+
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Font combinations</p>
+                                {[
+                                    { title: 'Impact', sub: 'Bold & Industrial', ff: 'impact' },
+                                    { title: 'Georgia', sub: 'Classic & Elegant', ff: 'georgia' },
+                                    { title: 'Courier', sub: 'Monospace Code', ff: 'courier' },
+                                    { title: 'Verdana', sub: 'Clean & Modern', ff: 'verdana' },
+                                ].map(f => (
+                                    <button key={f.ff} onClick={() => fabricRef.current?.updateFontFamily(f.ff)} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                                        <span className="text-base font-bold text-white/80 group-hover:text-white" style={{ fontFamily: f.ff }}>{f.title}</span>
+                                        <span className="block text-[11px] text-white/30 mt-0.5">{f.sub}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Uploads Panel */}
+                        {activePanel === 'uploads' && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="relative">
+                                    <button className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-lg font-semibold text-sm transition-colors cursor-pointer relative overflow-hidden shadow-lg shadow-violet-500/20">
+                                        <UploadCloud size={18} /> Upload files
+                                        <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </button>
+                                </div>
+                                {designState.sessionAssets.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                                        <ImageIcon size={40} className="text-white/10 mb-3" />
+                                        <p className="text-sm text-white/40 font-medium">No images uploaded</p>
+                                        <p className="text-xs text-white/20 mt-1">Drag files here or click Upload</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {designState.sessionAssets.map(asset => (
+                                            <div key={asset.id} onClick={() => fabricRef.current?.addImage(asset.proxyUrl, crypto.randomUUID())} className="relative group aspect-square bg-white/5 rounded-lg overflow-hidden border border-white/5 hover:border-violet-500/50 transition-all cursor-pointer">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={asset.proxyUrl} alt="Upload" className="w-full h-full object-cover" />
+                                                {asset.status === 'uploading' && (
+                                                    <div className="absolute inset-x-0 bottom-0 bg-black/70 backdrop-blur p-2">
+                                                        <div className="w-full bg-white/20 rounded-full h-1">
+                                                            <div className="bg-violet-500 h-1 rounded-full transition-all duration-300" style={{ width: `${asset.progress}%` }} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Elements Panel */}
+                        {activePanel === 'elements' && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="relative">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                                    <input placeholder="Search elements" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all" />
+                                </div>
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold">Shapes & Lines</p>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['□', '○', '△', '☆', '⬡', '◇'].map((s, i) => (
+                                        <button key={i} className="aspect-square bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 flex items-center justify-center text-2xl text-white/40 hover:text-white/70 transition-all cursor-pointer">{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Brand Panel */}
+                        {activePanel === 'brand' && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold">Brand Theme</p>
+                                {[
+                                    { name: 'StickyLife', brand: 'stickylife', color: '#3b82f6' },
+                                    { name: 'WallMonkeys', brand: 'wallmonkeys', color: '#f97316' },
+                                    { name: 'HC Brands', brand: 'hcbrands', color: '#10b981' },
+                                ].map(b => (
+                                    <button key={b.brand} onClick={() => window.location.search = `?brand=${b.brand}`} className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                                        <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: b.color }} />
+                                        <div className="text-left">
+                                            <span className="text-sm font-semibold text-white/80 group-hover:text-white">{b.name}</span>
+                                            <span className="block text-[10px] text-white/30">Apply theme</span>
+                                        </div>
+                                    </button>
+                                ))}
+                                {isAdmin && (
+                                    <div className="mt-4 pt-4 border-t border-white/10">
+                                        <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-3 flex items-center gap-1"><Shield size={11} /> Template Mapping</p>
+                                        <select onChange={(e) => fabricRef.current?.setPlaceholderKey(e.target.value)} className="w-full bg-white/10 border border-white/10 text-white/80 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500/50">
+                                            <option value="">No Mapping</option>
+                                            {['{{USER_NAME}}', '{{EMAIL}}', '{{PHONE}}', '{{COMPANY}}'].map(k => <option key={k} value={k}>{k}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </aside>
+                )}
+
+                {/* ── Canvas Area ── */}
+                <main className="flex-1 flex flex-col bg-[#323247] overflow-hidden relative">
+
+                    {/* Canvas viewport */}
+                    <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
+                        <div className="relative bg-white rounded shadow-2xl shadow-black/40" style={{ width: 800, height: 600 }}>
+                            {/* Safe zone */}
+                            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-pink-400/0 hover:border-pink-400/30 transition-colors z-[40] m-[20px] rounded-sm" />
+
+                            {/* Floating HUD */}
+                            {designState.activeObjectId && designState.activeObjectBox && (
+                                <div
+                                    className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto"
+                                    style={{
+                                        left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
+                                        top: designState.activeObjectBox.top - 44,
+                                        transform: 'translateX(-50%)'
+                                    }}
+                                >
+                                    <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
+                                    <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
+                                    {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
+                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
+                                            <AlertTriangle size={10} className="animate-pulse" /> DPI
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <canvas ref={canvasRef} id={canvasId.current} className="bg-white rounded" />
+                        </div>
+                    </div>
+
+                    {/* Bottom bar */}
+                    <div className="h-[40px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0">
+                        <div className="flex items-center gap-2 text-xs text-white/40">
+                            <span className="flex items-center gap-1"><Layers size={12} /> {designState.objects.length} layers</span>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => { const z = Math.max(25, zoom - 10); setZoom(z); fabricRef.current?.canvas.setZoom(z / 100); fabricRef.current?.canvas.requestRenderAll(); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><ZoomOut size={14} /></button>
+                            <span className="text-xs text-white/50 min-w-[40px] text-center">{zoom}%</span>
+                            <button onClick={() => { const z = Math.min(200, zoom + 10); setZoom(z); fabricRef.current?.canvas.setZoom(z / 100); fabricRef.current?.canvas.requestRenderAll(); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><ZoomIn size={14} /></button>
+                        </div>
+                    </div>
+                </main>
+
+                {/* ── Right Properties Panel ── */}
+                <aside className="w-[280px] bg-[#252536] border-l border-white/5 flex flex-col shrink-0 overflow-y-auto">
+                    <div className="p-4 border-b border-white/5">
+                        <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold">Design Properties</h3>
+                    </div>
+                    <div className="flex-1 p-4 space-y-4">
+                        {/* Canvas specs */}
+                        <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div><span className="block text-[10px] text-white/30 uppercase mb-0.5">Width</span><span className="text-white/70 font-medium">{designState.canvasWidth}px</span></div>
+                                <div><span className="block text-[10px] text-white/30 uppercase mb-0.5">Height</span><span className="text-white/70 font-medium">{designState.canvasHeight}px</span></div>
+                            </div>
+                        </div>
+
+                        {/* Layers list */}
+                        <div>
+                            <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
+                                <span>Layers</span>
+                                <span className="text-emerald-400/50 text-[10px]">● Live</span>
+                            </p>
+                            <div className="space-y-1.5">
+                                {[...designState.objects].reverse().map(obj => (
+                                    <div key={obj.id} className={`text-xs p-2.5 rounded-lg transition-all ${obj.id === designState.activeObjectId ? 'bg-violet-600/20 border border-violet-500/30' : 'bg-white/5 border border-transparent hover:bg-white/10'}`}>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-medium text-white/70 capitalize flex items-center gap-1.5">
+                                                {obj.type === 'textbox' || obj.type === 'text' ? <Type size={12} className="text-violet-400" /> : <ImageIcon size={12} className="text-blue-400" />}
+                                                {obj.type}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => fabricRef.current?.toggleLock(obj.id)} className="text-white/20 hover:text-white/50 transition-colors cursor-pointer text-[10px]">
+                                                    {obj.locked ? '🔒' : '🔓'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-1 mt-1.5 text-[9px] text-white/30 font-mono">
+                                            <span>X:{Math.round(obj.left)}</span>
+                                            <span>Y:{Math.round(obj.top)}</span>
+                                            <span>W:{Math.round(obj.width)}</span>
+                                            <span>H:{Math.round(obj.height)}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Warnings */}
+                        {designState.warnings.length > 0 && (
+                            <div className="border-t border-white/5 pt-4">
+                                <p className="text-[11px] text-red-400/70 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
+                                    <AlertTriangle size={12} /> Warnings ({designState.warnings.length})
+                                </p>
+                                <div className="space-y-1.5">
+                                    {designState.warnings.map(w => (
+                                        <div key={w.id} className="text-xs bg-red-500/10 text-red-300/80 p-2.5 rounded-lg border border-red-500/20">
+                                            <span className="font-semibold uppercase text-[10px]">{w.type}</span>
+                                            <p className="text-red-300/50 mt-0.5">{w.message}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI Image tools */}
+                        {designState.objects.some(o => o.type === 'image') && (
+                            <div className="border-t border-white/5 pt-4">
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-3">AI Tools</p>
+                                <div className="space-y-2">
+                                    <button onClick={() => fabricRef.current?.removeBackgroundForActiveObject()} className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-semibold hover:from-purple-500 hover:to-indigo-500 transition-all cursor-pointer shadow-lg shadow-purple-500/20">
+                                        <Sparkles size={14} /> Remove Background
+                                    </button>
+                                    <button onClick={() => fabricRef.current?.vectorizeActiveObject()} className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-semibold hover:from-emerald-500 hover:to-teal-500 transition-all cursor-pointer shadow-lg shadow-emerald-500/20">
+                                        <Sparkles size={14} /> Vectorize
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </aside>
+            </div>
+
+            {/* ═══════════ REVIEW MODAL ═══════════ */}
+            {isReviewOpen && finalPayload && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                    <div className="bg-[#252536] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-white/10">
+                        <div className="p-5 border-b border-white/5 flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2"><ShoppingCart size={20} className="text-violet-400" /> Order Review</h2>
+                            <button onClick={() => setIsReviewOpen(false)} className="text-white/40 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">✕</button>
+                        </div>
+                        <div className="p-5 flex-1 overflow-y-auto grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-3">Preview</h3>
+                                <div className="bg-white/5 rounded-xl p-4 border border-white/5 aspect-[4/3] flex items-center justify-center">
+                                    {designState.preview ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={designState.preview} alt="Preview" className="max-w-full max-h-full object-contain" />
+                                    ) : <span className="text-white/20 text-sm">No preview</span>}
+                                </div>
+                                <div className="mt-3">
+                                    <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-2">Pre-Flight</h3>
+                                    <ul className="space-y-1.5 text-sm">
+                                        {['DPI', 'Bleed', 'Legibility'].map(check => (
+                                            <li key={check} className="flex items-center gap-2 text-white/60">
+                                                {designState.warnings.some(w => w.type === check.toLowerCase()) ? <AlertTriangle size={14} className="text-red-400" /> : <CheckCircle2 size={14} className="text-emerald-400" />}
+                                                {check}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div className="flex flex-col border-l border-white/5 pl-6">
+                                <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-3">Validation</h3>
+                                {finalPayload.is_orderable ? (
+                                    <div className="bg-emerald-500/10 text-emerald-300 p-3 rounded-xl border border-emerald-500/20 flex items-start gap-2 mb-4 text-sm"><CheckCircle2 size={16} className="shrink-0 mt-0.5" /><div><p className="font-semibold">Print Ready</p><p className="text-xs text-emerald-300/60 mt-0.5">All checks pass.</p></div></div>
+                                ) : (
+                                    <div className="bg-red-500/10 text-red-300 p-3 rounded-xl border border-red-500/20 flex items-start gap-2 mb-4 text-sm"><AlertTriangle size={16} className="shrink-0 mt-0.5" /><div><p className="font-semibold">Risks Detected</p><p className="text-xs text-red-300/60 mt-0.5">{designState.warnings.length} warning(s).</p></div></div>
+                                )}
+                                <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-2">Contract Data</h3>
+                                <div className="bg-black/30 text-emerald-400/80 p-3 rounded-xl overflow-auto text-[10px] font-mono flex-1 border border-white/5">
+                                    <pre>{JSON.stringify(finalPayload, null, 2)}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-white/5 flex justify-end gap-3">
+                            <button onClick={() => setIsReviewOpen(false)} className="px-5 py-2 text-white/60 font-medium hover:bg-white/10 rounded-lg transition-colors cursor-pointer">Back</button>
+                            <button className="px-5 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-500 transition-colors flex items-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"><ShoppingCart size={14} /> Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-    )
-});
-
-export default function Page() {
-    return <DynamicCanvasApp />;
+    );
 }

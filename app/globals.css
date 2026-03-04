@@ -7,19 +7,41 @@
   --color-brand-surface: var(--brand-surface);
 }
 
-html,
-body {
+* {
   margin: 0;
   padding: 0;
-  height: 100vh;
-  background-color: #f8fafc;
+  box-sizing: border-box;
 }
 
-/* Integrator UX: Smooth 300ms transitions for Brand Theme color swaps */
-*,
-*::before,
-*::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+html,
+body {
+  height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #1e1e2e;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Canvas container — prevent overflow bleach */
+.canvas-container {
+  border-radius: inherit;
 }
