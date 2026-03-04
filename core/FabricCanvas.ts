@@ -16,6 +16,10 @@ export class FabricCanvas {
     private lastPosX = 0;
     private lastPosY = 0;
 
+    // 1:1 Scale Dimension Tracking
+    public baseWidth = 800;
+    public baseHeight = 600;
+
     constructor(canvasElement: HTMLCanvasElement) {
         this.canvas = new fabric.Canvas(canvasElement, {
             width: 800,
@@ -80,6 +84,13 @@ export class FabricCanvas {
             if (zoom < 0.1) zoom = 0.1;
 
             this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY } as fabric.Point, zoom);
+
+            // Native DOM Scale Sync ("The White Box" Zoom)
+            this.canvas.setDimensions({
+                width: this.baseWidth * zoom,
+                height: this.baseHeight * zoom
+            });
+
             opt.e.preventDefault();
             opt.e.stopPropagation();
         });
@@ -201,6 +212,8 @@ export class FabricCanvas {
     }
 
     public resizeWorkspace(width: number, height: number) {
+        this.baseWidth = width;
+        this.baseHeight = height;
         this.canvas.setDimensions({ width, height });
 
         // Sync the new baseline to the store so the UI Property Panel updates
@@ -212,6 +225,17 @@ export class FabricCanvas {
         // Immediately reflow the viewport so the user sees the entire new product template
         this.zoomToFit();
         this.canvas.requestRenderAll();
+    }
+
+    public async loadTemplateJSON(json: any) {
+        if (!json) return;
+        try {
+            await this.canvas.loadFromJSON(json);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+        } catch (err) {
+            console.error("Failed to load template payload:", err);
+        }
     }
 
     public toggleLock(id: string) {

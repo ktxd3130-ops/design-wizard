@@ -555,14 +555,24 @@ export default function CanvasApp() {
                                                         key={item.id}
                                                         onClick={() => {
                                                             fabricRef.current?.resizeWorkspace(item.width, item.height);
+                                                            if (item.payload) {
+                                                                fabricRef.current?.loadTemplateJSON(item.payload);
+                                                            }
                                                         }}
-                                                        className="aspect-[4/3] bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 hover:border-violet-500/50 transition-all cursor-pointer flex flex-col items-center justify-center p-3 text-center group"
+                                                        className="aspect-[4/3] bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 hover:border-violet-500/50 transition-all cursor-pointer flex flex-col items-center justify-center p-2 text-center group overflow-hidden relative"
                                                     >
-                                                        <div className="w-10 h-10 mb-2 border-2 border-dashed border-white/10 group-hover:border-violet-400/50 rounded flex items-center justify-center transition-colors">
-                                                            <Layers size={14} className="text-white/20 group-hover:text-violet-400/80" />
-                                                        </div>
-                                                        <span className="text-[10px] font-semibold text-white/70 group-hover:text-white leading-tight line-clamp-2">{item.name}</span>
-                                                        <span className="text-[8px] text-white/30 mt-1 font-mono tracking-wider">{item.width}×{item.height}</span>
+                                                        {item.image ? (
+                                                            <div className="absolute inset-0 w-full h-full">
+                                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 mb-2 border-2 border-dashed border-white/10 group-hover:border-violet-400/50 rounded flex items-center justify-center transition-colors relative z-10">
+                                                                <Layers size={14} className="text-white/20 group-hover:text-violet-400/80" />
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[10px] font-semibold text-white/90 group-hover:text-white leading-tight line-clamp-2 relative z-10 mt-auto">{item.name}</span>
+                                                        <span className="text-[8px] text-white/50 mt-1 font-mono tracking-wider relative z-10">{item.width}×{item.height}</span>
                                                     </button>
                                                 ))}
                                             </div>

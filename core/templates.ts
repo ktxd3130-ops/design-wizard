@@ -6,6 +6,8 @@ export interface ProductTemplate {
     width: number; // in pixels
     height: number; // in pixels
     category: string;
+    image?: string;
+    payload?: any; // Fabric.js JSON representation of the predefined layout
 }
 
 export interface TemplateCategory {
@@ -85,7 +87,57 @@ export const HC_BRANDS_CATALOG: TemplateCategory[] = [
     {
         title: "Yard Signs",
         items: [
-            { id: generateId('yard'), name: "Real estate yard signs", width: 1200, height: 900, category: "Yard Signs" },
+            {
+                id: generateId('yard'),
+                name: "Real estate yard signs",
+                width: 1200,
+                height: 900,
+                category: "Yard Signs",
+                image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+                payload: {
+                    "version": "6.0.0",
+                    "objects": [
+                        {
+                            "type": "rect",
+                            "left": 0,
+                            "top": 0,
+                            "width": 1200,
+                            "height": 900,
+                            "fill": "#E53E3E",
+                            "selectable": false,
+                            "evented": false
+                        },
+                        {
+                            "type": "textbox",
+                            "left": 600,
+                            "top": 350,
+                            "width": 1000,
+                            "text": "FOR SALE",
+                            "fontSize": 200,
+                            "fontWeight": "bold",
+                            "fontFamily": "Inter",
+                            "fill": "#ffffff",
+                            "textAlign": "center",
+                            "originX": "center",
+                            "originY": "center"
+                        },
+                        {
+                            "type": "textbox",
+                            "left": 600,
+                            "top": 600,
+                            "width": 1000,
+                            "text": "555-0198",
+                            "fontSize": 120,
+                            "fontWeight": "normal",
+                            "fontFamily": "Inter",
+                            "fill": "#ffffff",
+                            "textAlign": "center",
+                            "originX": "center",
+                            "originY": "center"
+                        }
+                    ]
+                }
+            },
             { id: generateId('yard'), name: "Contractor yard signs", width: 1200, height: 900, category: "Yard Signs" },
             { id: generateId('yard'), name: "Political yard signs", width: 1200, height: 900, category: "Yard Signs" },
             { id: generateId('yard'), name: "Event yard signs", width: 1200, height: 900, category: "Yard Signs" },
