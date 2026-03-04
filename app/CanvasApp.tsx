@@ -8,13 +8,15 @@ import {
     ShoppingCart, CheckCircle2, ChevronRight, Shield, Trash2, Copy,
     Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
     Minus, Plus, Undo2, Redo2, Share2, LayoutGrid, Layers,
-    Sparkles, Download, ZoomIn, ZoomOut, Search
+    Sparkles, Download, ZoomIn, ZoomOut, Search,
+    Cloud, MessageSquare, BarChart2, FolderOpen, PenTool, Grid, Blocks,
+    Wand2, Settings2
 } from 'lucide-react';
 import { SessionAsset } from '@/core/types';
 import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
 import { DynamicConfigLoader, BrandConfig } from '@/core/config';
 
-type SidebarPanel = 'text' | 'uploads' | 'elements' | 'brand' | null;
+type SidebarPanel = 'templates' | 'elements' | 'text' | 'brand' | 'uploads' | 'draw' | 'projects' | 'apps' | null;
 
 export default function CanvasApp() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +25,7 @@ export default function CanvasApp() {
     const [mounted, setMounted] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
     const [finalPayload, setFinalPayload] = useState<any>(null);
     const [brandConfig, setBrandConfig] = useState<BrandConfig | null>(null);
     const [activePanel, setActivePanel] = useState<SidebarPanel>('text');
@@ -110,7 +113,14 @@ export default function CanvasApp() {
         e.target.value = '';
     };
     const handleReviewClick = () => { setFinalPayload(serializeForOpenMage()); setIsReviewOpen(true); };
-    const togglePanel = (panel: SidebarPanel) => setActivePanel(prev => prev === panel ? null : panel);
+    const togglePanel = (panel: SidebarPanel) => {
+        if (activePanel === panel && !isPanelCollapsed) {
+            setIsPanelCollapsed(true);
+        } else {
+            setActivePanel(panel);
+            setIsPanelCollapsed(false);
+        }
+    };
 
     // Find active text object
     const activeObj = designState.objects.find(o => o.id === designState.activeObjectId) as any;
@@ -137,10 +147,13 @@ export default function CanvasApp() {
                     </button>
                 </div>
 
-                {/* Undo/Redo */}
+                {/* Undo/Redo & Sync */}
                 <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-3">
                     <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Undo2 size={16} /></button>
                     <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Redo2 size={16} /></button>
+                    <div className="flex items-center gap-1.5 px-2 ml-1 text-white/40">
+                        <Cloud size={16} /> <CheckCircle2 size={10} className="absolute ml-2.5 mt-2.5 bg-[#1e1e2e] rounded-full text-white" />
+                    </div>
                 </div>
 
                 {/* Center title */}
@@ -152,6 +165,17 @@ export default function CanvasApp() {
 
                 {/* Right actions */}
                 <div className="flex items-center gap-2">
+                    {/* Collaborator Avatars */}
+                    <div className="flex items-center mr-2">
+                        <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold ring-2 ring-[#1e1e2e] z-10">K</div>
+                        <button className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white ring-2 ring-[#1e1e2e] -ml-2 z-0 transition-colors">
+                            <Plus size={14} />
+                        </button>
+                    </div>
+
+                    <button className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"><BarChart2 size={18} /></button>
+                    <button className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"><MessageSquare size={18} /></button>
+
                     {isAdmin && (
                         <button
                             onClick={() => {
@@ -162,17 +186,17 @@ export default function CanvasApp() {
                                 const a = document.createElement('a'); a.href = url;
                                 a.download = `template_${designState.design_id}.json`; a.click();
                             }}
-                            className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors ml-2"
                         >
                             <Shield size={12} /> Export
                         </button>
                     )}
-                    <button className="flex items-center gap-1.5 text-sm bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors">
+                    <button className="flex items-center gap-1.5 text-sm bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors ml-1">
                         <Share2 size={14} /> Share
                     </button>
                     <button
                         onClick={handleReviewClick}
-                        className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg transition-colors font-medium shadow-lg shadow-violet-500/25"
+                        className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg transition-colors font-medium shadow-lg shadow-violet-500/25 ml-1"
                     >
                         <Download size={14} /> Add to Cart
                     </button>
@@ -229,12 +253,16 @@ export default function CanvasApp() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* ── Icon Rail (far left) ── */}
-                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1 shrink-0">
+                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1 shrink-0 overflow-y-auto">
                     {[
+                        { id: 'templates' as SidebarPanel, icon: <Grid size={20} />, label: 'Templates' },
                         { id: 'elements' as SidebarPanel, icon: <LayoutGrid size={20} />, label: 'Elements' },
                         { id: 'text' as SidebarPanel, icon: <Type size={20} />, label: 'Text' },
                         { id: 'brand' as SidebarPanel, icon: <Sparkles size={20} />, label: 'Brand' },
                         { id: 'uploads' as SidebarPanel, icon: <UploadCloud size={20} />, label: 'Uploads' },
+                        { id: 'draw' as SidebarPanel, icon: <PenTool size={20} />, label: 'Draw' },
+                        { id: 'projects' as SidebarPanel, icon: <FolderOpen size={20} />, label: 'Projects' },
+                        { id: 'apps' as SidebarPanel, icon: <Blocks size={20} />, label: 'Apps' },
                     ].map(item => (
                         <button
                             key={item.id}
@@ -253,8 +281,8 @@ export default function CanvasApp() {
                 </nav>
 
                 {/* ── Side Panel ── */}
-                {activePanel && (
-                    <aside className="w-[300px] bg-[#252536] border-r border-white/5 flex flex-col shrink-0 overflow-hidden">
+                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[#252536] border-r border-white/5 shrink-0`}>
+                    <aside className="w-[300px] flex flex-col shrink-0 overflow-hidden absolute inset-y-0 left-0">
                         {/* Text Panel */}
                         {activePanel === 'text' && (
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -263,23 +291,61 @@ export default function CanvasApp() {
                                     <input placeholder="Search fonts and combinations" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all" />
                                 </div>
 
-                                <button onClick={handleAddText} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
+                                <button onClick={handleAddText} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
                                     <Type size={18} /> Add a text box
                                 </button>
 
+                                <button className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer">
+                                    <Wand2 size={16} className="text-violet-400" /> Magic Write
+                                </button>
+
+                                {/* Brand Kit Inline */}
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[12px] font-semibold flex items-center gap-1.5"><Settings2 size={14} className="text-white/40" /> Brand Kit</p>
+                                        <button className="text-[10px] font-semibold text-white/50 hover:text-white flex items-center gap-1">Edit <Sparkles size={8} className="text-amber-400" /></button>
+                                    </div>
+                                    <button className="w-full flex items-center justify-center py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-white/80 transition-colors">
+                                        Add your brand fonts
+                                    </button>
+                                </div>
+
                                 <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Default text styles</p>
 
-                                <button onClick={() => { if (fabricRef.current) { fabricRef.current.addText(); /* TODO: set heading size */ } }} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
-                                    <span className="text-lg font-bold text-white/90">Add a heading</span>
-                                </button>
-                                <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
-                                    <span className="text-sm font-semibold text-white/80">Add a subheading</span>
-                                </button>
-                                <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer">
-                                    <span className="text-xs text-white/60">Add a little bit of body text</span>
+                                <div className="space-y-2">
+                                    <button onClick={() => { if (fabricRef.current) { fabricRef.current.addText(); } }} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                        <span className="text-lg font-bold">Add a heading</span>
+                                    </button>
+                                    <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                        <span className="text-sm font-semibold">Add a subheading</span>
+                                    </button>
+                                    <button onClick={handleAddText} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                                        <span className="text-xs">Add a little bit of body text</span>
+                                    </button>
+                                </div>
+
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Dynamic text</p>
+                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-amber-500 rounded flex items-center justify-center text-white/90 text-xs font-bold ring-1 ring-white/10">
+                                        [1]
+                                    </div>
+                                    <span className="text-sm font-semibold text-white/90 group-hover:text-white">Page numbers</span>
                                 </button>
 
-                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Font combinations</p>
+                                <div className="flex items-center justify-between mt-6 mb-2">
+                                    <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold">Apps</p>
+                                    <button className="text-[10px] text-white/50 hover:text-white font-medium">See all</button>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 pb-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="aspect-square bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-lg border border-white/10 flex items-center justify-center cursor-pointer hover:border-white/30 transition-colors">
+                                            <Sparkles size={16} className="text-white/40" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-2 mb-2 border-t border-white/5 pt-4">Font combinations</p>
                                 {[
                                     { title: 'Impact', sub: 'Bold & Industrial', ff: 'impact' },
                                     { title: 'Georgia', sub: 'Classic & Elegant', ff: 'georgia' },
@@ -373,7 +439,51 @@ export default function CanvasApp() {
                                 )}
                             </div>
                         )}
+
+                        {/* Templates Placeholder */}
+                        {activePanel === 'templates' && (
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+                                <Grid size={40} className="text-white/10 mb-3" />
+                                <p className="text-sm text-white/40 font-medium">No templates available</p>
+                            </div>
+                        )}
+
+                        {/* Draw Placeholder */}
+                        {activePanel === 'draw' && (
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+                                <PenTool size={40} className="text-white/10 mb-3" />
+                                <p className="text-sm text-white/40 font-medium">Drawing tools coming soon</p>
+                            </div>
+                        )}
+
+                        {/* Projects Placeholder */}
+                        {activePanel === 'projects' && (
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+                                <FolderOpen size={40} className="text-white/10 mb-3" />
+                                <p className="text-sm text-white/40 font-medium">Your projects will appear here</p>
+                            </div>
+                        )}
+
+                        {/* Apps Placeholder */}
+                        {activePanel === 'apps' && (
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+                                <Blocks size={40} className="text-white/10 mb-3" />
+                                <p className="text-sm text-white/40 font-medium">App integrations coming soon</p>
+                            </div>
+                        )}
                     </aside>
+                </div>
+
+                {/* Collapse Handle */}
+                {activePanel && (
+                    <div className="relative z-10 flex items-center shrink-0 w-0">
+                        <button
+                            onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+                            className="absolute left-0 w-5 h-10 bg-[#252536] border border-y-white/10 border-r-white/10 border-l-transparent rounded-r-[10px] flex items-center justify-center text-white/40 hover:text-white transition-colors shadow-[2px_0_8px_rgba(0,0,0,0.2)] cursor-pointer translate-x-[-1px]"
+                        >
+                            <ChevronRight size={14} className={`transition-transform duration-300 ${!isPanelCollapsed ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
                 )}
 
                 {/* ── Canvas Area ── */}
@@ -408,16 +518,54 @@ export default function CanvasApp() {
                         </div>
                     </div>
 
-                    {/* Bottom bar */}
-                    <div className="h-[40px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0">
-                        <div className="flex items-center gap-2 text-xs text-white/40">
-                            <span className="flex items-center gap-1"><Layers size={12} /> {designState.objects.length} layers</span>
+                    {/* Bottom bar (Canva style) */}
+                    <div className="h-[48px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0 justify-between">
+                        {/* Left: Notes & Timer */}
+                        <div className="flex items-center gap-4">
+                            <button className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors cursor-pointer">
+                                <AlignLeft size={14} /> Notes
+                            </button>
+                            <button className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors cursor-pointer">
+                                <div className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center"><Minus size={6} className="rotate-90" /></div> Timer
+                            </button>
                         </div>
-                        <div className="flex-1" />
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => { const z = Math.max(25, zoom - 10); setZoom(z); fabricRef.current?.canvas.setZoom(z / 100); fabricRef.current?.canvas.requestRenderAll(); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><ZoomOut size={14} /></button>
-                            <span className="text-xs text-white/50 min-w-[40px] text-center">{zoom}%</span>
-                            <button onClick={() => { const z = Math.min(200, zoom + 10); setZoom(z); fabricRef.current?.canvas.setZoom(z / 100); fabricRef.current?.canvas.requestRenderAll(); }} className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><ZoomIn size={14} /></button>
+
+                        {/* Center: Slide/Page Thumbnails */}
+                        <div className="flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
+                            <div className="h-8 w-12 bg-white rounded flex items-center justify-center text-[10px] text-black font-semibold shadow-sm border-2 border-violet-500 cursor-pointer">
+                                1
+                            </div>
+                            <button className="h-8 px-2 bg-white/5 hover:bg-white/10 rounded flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer">
+                                <Plus size={14} /> <ChevronRight size={14} className="rotate-90 ml-1 opacity-50" />
+                            </button>
+                        </div>
+
+                        {/* Right: Zoom slider, Grid view, Fullscreen */}
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="500"
+                                    value={zoom}
+                                    onChange={(e) => {
+                                        const z = parseInt(e.target.value);
+                                        setZoom(z);
+                                        fabricRef.current?.canvas.setZoom(z / 100);
+                                        fabricRef.current?.canvas.requestRenderAll();
+                                    }}
+                                    className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
+                                />
+                                <span className="text-xs text-white/70 min-w-[32px]">{zoom}%</span>
+                            </div>
+                            <div className="w-px h-4 bg-white/10" />
+                            <div className="flex items-center gap-2 text-xs text-white/50">
+                                <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded cursor-pointer hover:bg-white/10 hover:text-white transition-colors">
+                                    <LayoutGrid size={14} /> Pages 1 / 1
+                                </span>
+                                <button className="p-1.5 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><LayoutGrid size={14} /></button>
+                                <button className="p-1.5 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"><Minus size={14} className="rotate-45" /></button>
+                            </div>
                         </div>
                     </div>
                 </main>
