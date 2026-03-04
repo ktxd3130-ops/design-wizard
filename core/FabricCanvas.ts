@@ -413,8 +413,64 @@ export class FabricCanvas {
         });
         this.canvas.add(text);
         this.canvas.setActiveObject(text);
-        this.canvas.requestRenderAll();
         this.syncToStore();
+    }
+
+    public addShape(type: 'rect' | 'circle' | 'triangle' | 'star' | 'hex' | 'diamond', color: string = '#000000') {
+        const center = this.canvas.getVpCenter();
+        const baseOptions = {
+            left: center.x,
+            top: center.y,
+            fill: color,
+            id: crypto.randomUUID(),
+            originX: 'center' as fabric.TOriginX,
+            originY: 'center' as fabric.TOriginY,
+            scaleX: 1,
+            scaleY: 1
+        };
+
+        let shape: fabric.Object | null = null;
+
+        switch (type) {
+            case 'rect':
+                shape = new fabric.Rect({ ...baseOptions, width: 100, height: 100, rx: 8, ry: 8 });
+                break;
+            case 'circle':
+                shape = new fabric.Circle({ ...baseOptions, radius: 50 });
+                break;
+            case 'triangle':
+                shape = new fabric.Triangle({ ...baseOptions, width: 100, height: 100 });
+                break;
+            case 'star':
+                // A basic 5-point star using Polygon
+                const starPoints = [
+                    { x: 50, y: 0 }, { x: 61, y: 35 }, { x: 98, y: 35 }, { x: 68, y: 57 },
+                    { x: 79, y: 91 }, { x: 50, y: 70 }, { x: 21, y: 91 }, { x: 32, y: 57 },
+                    { x: 2, y: 35 }, { x: 39, y: 35 }
+                ];
+                shape = new fabric.Polygon(starPoints, { ...baseOptions });
+                break;
+            case 'hex':
+                const hexPoints = [
+                    { x: 50, y: 0 }, { x: 100, y: 25 }, { x: 100, y: 75 },
+                    { x: 50, y: 100 }, { x: 0, y: 75 }, { x: 0, y: 25 }
+                ];
+                shape = new fabric.Polygon(hexPoints, { ...baseOptions });
+                break;
+            case 'diamond':
+                const diamondPoints = [
+                    { x: 50, y: 0 }, { x: 100, y: 50 }, { x: 50, y: 100 }, { x: 0, y: 50 }
+                ];
+                shape = new fabric.Polygon(diamondPoints, { ...baseOptions });
+                break;
+        }
+
+        if (shape) {
+            this.canvas.add(shape);
+            this.canvas.setActiveObject(shape);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+        }
     }
 
     public async updateFontFamily(fontFamily: string) {
