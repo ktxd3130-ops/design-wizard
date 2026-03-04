@@ -380,32 +380,31 @@ export default function CanvasApp() {
                 <main className="flex-1 flex flex-col bg-[#323247] overflow-hidden relative">
 
                     {/* Canvas viewport */}
-                    <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
+                    <div className="flex-1 flex items-center justify-center overflow-hidden p-8 relative">
+                        {/* Floating HUD */}
+                        {designState.activeObjectId && designState.activeObjectBox && (
+                            <div
+                                className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto"
+                                style={{
+                                    left: `calc(50% - 400px + ${designState.activeObjectBox.left + (designState.activeObjectBox.width / 2)}px)`,
+                                    top: `calc(50% - 300px + ${designState.activeObjectBox.top - 44}px)`,
+                                    transform: 'translateX(-50%)'
+                                }}
+                            >
+                                <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
+                                <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
+                                {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
+                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
+                                        <AlertTriangle size={10} className="animate-pulse" /> DPI
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="relative bg-white rounded shadow-2xl shadow-black/40" style={{ width: 800, height: 600 }}>
                             {/* Safe zone */}
                             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-pink-400/0 hover:border-pink-400/30 transition-colors z-[40] m-[20px] rounded-sm" />
-
-                            {/* Floating HUD */}
-                            {designState.activeObjectId && designState.activeObjectBox && (
-                                <div
-                                    className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto"
-                                    style={{
-                                        left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
-                                        top: designState.activeObjectBox.top - 44,
-                                        transform: 'translateX(-50%)'
-                                    }}
-                                >
-                                    <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
-                                    <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
-                                    {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
-                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
-                                            <AlertTriangle size={10} className="animate-pulse" /> DPI
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <canvas ref={canvasRef} id={canvasId.current} className="bg-white rounded" />
+                            <canvas ref={canvasRef} id={canvasId.current} />
                         </div>
                     </div>
 

@@ -342,39 +342,74 @@ export class FabricCanvas {
         useDesignStore.getState().syncCanvasState({ objects: objects as any, warnings, preview });
     }
 
-    private loadInitialState() {
+    private async loadInitialState() {
         // Load state from the Zustand persisted store
         const stateObjects = useDesignStore.getState().state.objects;
-        // For MVP, we'll restore text objects if any exist in storage
-        stateObjects.forEach((obj: any) => {
-            if (obj.type === 'text') {
-                const text = new fabric.Textbox(obj.text || 'Text', {
-                    ...obj,
+
+        for (const obj of stateObjects) {
+            if (obj.type === 'text' || obj.type === 'textbox') {
+                const text = new fabric.Textbox((obj as any).text || 'Text', {
+                    left: obj.left,
+                    top: obj.top,
+                    width: obj.width,
+                    fontFamily: (obj as any).fontFamily || 'sans-serif',
+                    fontSize: (obj as any).fontSize || 24,
+                    fill: (obj as any).fill || '#000000',
+                    fontWeight: (obj as any).fontWeight || 'normal',
+                    textAlign: (obj as any).textAlign || 'left',
+                    angle: obj.angle,
+                    opacity: obj.opacity,
+                    id: obj.id,
+                    autoSize: (obj as any).autoSize,
+                    placeholderKey: (obj as any).placeholderKey,
                     selectable: !obj.locked,
                     evented: !obj.locked,
+                    locked: obj.locked,
                 });
                 this.canvas.add(text);
+            } else if (obj.type === 'image' && (obj as any).proxyUrl) {
+                try {
+                    const img = await fabric.Image.fromURL((obj as any).proxyUrl);
+                    img.set({
+                        left: obj.left,
+                        top: obj.top,
+                        scaleX: obj.scaleX,
+                        scaleY: obj.scaleY,
+                        angle: obj.angle,
+                        opacity: obj.opacity,
+                        id: obj.id,
+                        proxyUrl: (obj as any).proxyUrl,
+                        highResUrl: (obj as any).highResUrl,
+                        s3Url: (obj as any).s3Url,
+                        selectable: !obj.locked,
+                        evented: !obj.locked,
+                        locked: obj.locked,
+                    });
+                    this.canvas.add(img);
+                } catch (e) {
+                    console.warn('Could not restore image:', e);
+                }
             }
-        });
-
-        if (stateObjects.length > 0) {
-            this.canvas.renderAll();
         }
+
+        this.canvas.requestRenderAll();
     }
 
     public addText() {
-        const text = new fabric.Textbox('New Text', {
+        const text = new fabric.Textbox('Your text here', {
             left: 100,
             top: 100,
+            width: 250,
             fontFamily: 'sans-serif',
             fontSize: 24,
             fill: '#000000',
             id: crypto.randomUUID(),
-            autoSize: true, // Architect: enable by default
+            autoSize: true,
             isFontLoading: false,
         });
         this.canvas.add(text);
         this.canvas.setActiveObject(text);
+        this.canvas.requestRenderAll();
         this.syncToStore();
     }
 
@@ -426,6 +461,7 @@ export class FabricCanvas {
 
         this.canvas.add(img);
         this.canvas.setActiveObject(img);
+        this.canvas.requestRenderAll();
         this.syncToStore();
     }
 
@@ -622,6 +658,7 @@ export class FabricCanvas {
             activeObjects.forEach(obj => {
                 this.canvas.remove(obj);
             });
+            this.canvas.requestRenderAll();
             this.syncToStore();
             this.updateActiveObjectBox();
         }
