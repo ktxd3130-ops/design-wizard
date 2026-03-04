@@ -31,6 +31,13 @@ export class FabricCanvas {
         // Architect: Shrink-to-Fit listener for Textboxes
         this.canvas.on('object:scaling', (e) => {
             const target = e.target;
+            if (target) {
+                target.set({
+                    left: Math.round(target.left || 0),
+                    top: Math.round(target.top || 0)
+                });
+            }
+
             if (target && target.type === 'textbox' && (target as any).autoSize) {
                 const textbox = target as fabric.Textbox;
 
@@ -43,6 +50,18 @@ export class FabricCanvas {
 
                 this.canvas.renderAll();
             }
+            this.updateActiveObjectBox();
+        });
+
+        this.canvas.on('object:moving', (e) => {
+            const target = e.target;
+            if (target) {
+                target.set({
+                    left: Math.round(target.left || 0),
+                    top: Math.round(target.top || 0)
+                });
+            }
+            this.updateActiveObjectBox();
         });
 
         this.canvas.on('mouse:up', () => {
@@ -161,6 +180,24 @@ export class FabricCanvas {
         // Ensure Production Metadata remains intact (e.g. tracking zIndex or specific types)
         // Update the Zustand store immediately so the UI is reacting in real-time (<200ms)
         this.syncToStore();
+    }
+
+    public bringForward() {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            this.canvas.bringObjectForward(activeObj);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+        }
+    }
+
+    public sendBackwards() {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            this.canvas.sendObjectBackwards(activeObj);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+        }
     }
 
     public toggleLock(id: string) {

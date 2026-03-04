@@ -10,7 +10,7 @@ import {
     Minus, Plus, Undo2, Redo2, Share2, LayoutGrid, Layers,
     Sparkles, Download, ZoomIn, ZoomOut, Search,
     Cloud, MessageSquare, BarChart2, FolderOpen, PenTool, Grid, Blocks,
-    Wand2, Settings2, Clock, Sticker
+    Wand2, Settings2, Clock, Sticker, ArrowUpToLine, ArrowDownToLine
 } from 'lucide-react';
 import { SessionAsset } from '@/core/types';
 import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
@@ -71,6 +71,17 @@ export default function CanvasApp() {
             }
         };
     }, [mounted]);
+
+    // ── Retina Mapping ──────────────────────────────────────────
+    useEffect(() => {
+        const handleResize = () => {
+            if (fabricRef.current) {
+                fabricRef.current.canvas.calcOffset();
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // ── Global Hotkeys ──────────────────────────────────────────
     useEffect(() => {
@@ -579,27 +590,34 @@ export default function CanvasApp() {
                             }
                         }}
                     >
-                        {/* Floating HUD */}
-                        {designState.activeObjectId && designState.activeObjectBox && (
-                            <div
-                                className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto"
-                                style={{
-                                    left: `calc(50% - 400px + ${designState.activeObjectBox.left + (designState.activeObjectBox.width / 2)}px)`,
-                                    top: `calc(50% - 300px + ${designState.activeObjectBox.top - 44}px)`,
-                                    transform: 'translateX(-50%)'
-                                }}
-                            >
-                                <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
-                                <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
-                                {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
-                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
-                                        <AlertTriangle size={10} className="animate-pulse" /> DPI
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
                         <div className="relative bg-white rounded shadow-2xl shadow-black/40" style={{ width: 800, height: 600 }}>
+                            {/* Floating HUD anchored locally to the canvas container */}
+                            {designState.activeObjectId && designState.activeObjectBox && (
+                                <div
+                                    className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto transition-transform"
+                                    style={{
+                                        left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
+                                        top: designState.activeObjectBox.top - 48,
+                                        transform: 'translateX(-50%)' // Center exactly over the object
+                                    }}
+                                >
+                                    <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
+                                    <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
+                                    <div className="w-px h-4 bg-white/10 mx-1" />
+                                    <button onClick={() => fabricRef.current?.bringForward()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Bring to Front"><ArrowUpToLine size={14} /></button>
+                                    <button onClick={() => fabricRef.current?.sendBackwards()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Send to Back"><ArrowDownToLine size={14} /></button>
+
+                                    {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
+                                        <>
+                                            <div className="w-px h-4 bg-white/10 mx-1" />
+                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
+                                                <AlertTriangle size={10} className="animate-pulse" /> DPI
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Safe zone */}
                             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-pink-400/0 hover:border-pink-400/30 transition-colors z-[40] m-[20px] rounded-sm" />
                             <canvas ref={canvasRef} id={canvasId.current} />
