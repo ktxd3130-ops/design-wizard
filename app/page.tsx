@@ -77,12 +77,18 @@ export default function MainLayout() {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-            if (e.key.toLowerCase() === 't') {
+            if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
                 handleAddText();
             } else if (e.key === 'Delete' || e.key === 'Backspace') {
                 e.preventDefault();
                 fabricRef.current?.deleteSelected();
+            } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                fabricRef.current?.copy();
+            } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+                e.preventDefault();
+                fabricRef.current?.paste();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -289,7 +295,7 @@ export default function MainLayout() {
 
                 {/* Live Preview UI strictly for verification */}
                 {designState.preview && (
-                    <div className="absolute top-20 right-6 bg-white p-2 rounded-lg shadow-sm border border-slate-200 z-10">
+                    <div className="absolute top-20 right-6 bg-white p-2 rounded-lg shadow-sm border border-slate-200 z-10 pointer-events-none">
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Live Thumbnail</p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={designState.preview} alt="preview" className="w-24 h-auto border border-slate-100 rounded" />

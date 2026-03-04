@@ -627,4 +627,47 @@ export class FabricCanvas {
         }
     }
 
+    // Architect UX: Deep Cloning
+    private clipboard: any = null;
+
+    public async copy() {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            // Fabric v6 uses promises for clone
+            const clonedObj = await activeObj.clone();
+            this.clipboard = clonedObj;
+        }
+    }
+
+    public async paste() {
+        if (!this.clipboard) return;
+
+        const clonedObj = await this.clipboard.clone();
+        this.canvas.discardActiveObject();
+
+        clonedObj.set({
+            left: (clonedObj.left || 0) + 20,
+            top: (clonedObj.top || 0) + 20,
+            evented: true,
+        });
+
+        if (clonedObj.type === 'activeSelection') {
+            clonedObj.canvas = this.canvas;
+            clonedObj.forEachObject((obj: any) => {
+                this.canvas.add(obj);
+            });
+            clonedObj.setCoords();
+        } else {
+            clonedObj.set('id', crypto.randomUUID());
+            this.canvas.add(clonedObj);
+        }
+
+        // Must sync clipboard to new offset clone to allow multiple pastes
+        this.clipboard = await clonedObj.clone();
+
+        this.canvas.setActiveObject(clonedObj);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+        this.updateActiveObjectBox();
+    }
 }

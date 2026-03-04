@@ -1,5 +1,6 @@
 import { DesignState, OpenMagePayload } from './types';
 import { useDesignStore } from './storage';
+import { PlaceholderService } from './services/PlaceholderService';
 
 export class OrderValidationService {
     /**
@@ -30,6 +31,10 @@ export function serializeForOpenMage(): OpenMagePayload {
         return minified;
     });
 
+    // Integrator: Placeholder Scrubbing
+    // Ensure OpenMage gets hardcoded generated names instead of {{USER_NAME}} strings
+    const hydratedObjects = PlaceholderService.hydrateTemplate(minifiedObjects);
+
     // Create the final, compressed JSON payload
     return {
         design_id: state.design_id,
@@ -40,7 +45,7 @@ export function serializeForOpenMage(): OpenMagePayload {
         },
         design_state: {
             ...state,
-            objects: minifiedObjects,
+            objects: hydratedObjects,
             sessionAssets: [], // OpenMage doesn't need pending session assets, only the final object S3 paths
             activeObjectId: undefined // Cleanup
         } as unknown as DesignState,
