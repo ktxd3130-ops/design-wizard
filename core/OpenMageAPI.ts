@@ -28,6 +28,13 @@ export function serializeForOpenMage(): OpenMagePayload {
     // Integrator: Payload Minifier - Strip transient / local-only properties
     const minifiedObjects = state.objects.map(obj => {
         const { id, proxyUrl, isFontLoading, ...minified } = obj as any;
+
+        // If an S3 path exists (upload finished), forcibly rewrite the source
+        // preventing local blob URLs from polluting the DB contract
+        if (minified.type === 'image' && minified.s3Url) {
+            minified.src = minified.s3Url;
+        }
+
         return minified;
     });
 

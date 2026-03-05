@@ -16,6 +16,10 @@ export class FabricCanvas {
     private lastPosX = 0;
     private lastPosY = 0;
 
+    // Architect: Performance Loop State
+    private syncPending = false;
+    private rafId = 0;
+
     // 1:1 Scale Dimension Tracking
     public baseWidth = 800;
     public baseHeight = 600;
@@ -559,7 +563,11 @@ export class FabricCanvas {
             }
         });
         this.canvas.requestRenderAll();
-        setTimeout(() => this.syncToStore(), 300);
+
+        // Timeout to allow the CSS transitions to complete before taking a Zustand snapshot
+        setTimeout(() => {
+            this.syncToStore();
+        }, 300);
     }
 
     public async addImage(url: string, id: string) {
@@ -894,5 +902,79 @@ export class FabricCanvas {
         this.canvas.requestRenderAll();
         this.syncToStore();
         this.updateActiveObjectBox();
+    }
+
+    // ── Production Agent: Visual Restrictions ──────────────────
+
+    private safetyShroudObj: fabric.Rect | null = null;
+
+    public toggleSafetyShroud(show: boolean) {
+        if (show) {
+            if (this.safetyShroudObj) return;
+
+            // Standard print bleed is typically 0.125" to 0.25". 
+            // We'll visually represent it as 18px inward.
+            const bleedMargin = 18;
+            this.safetyShroudObj = new fabric.Rect({
+                left: bleedMargin,
+                top: bleedMargin,
+                width: this.baseWidth - (bleedMargin * 2),
+                height: this.baseHeight - (bleedMargin * 2),
+                fill: 'transparent',
+                stroke: 'rgba(239, 68, 68, 0.7)', // red-500
+                strokeWidth: 2,
+                strokeDashArray: [10, 5],
+                selectable: false,
+                evented: false,
+                excludeFromExport: true // Do not serialize!
+            });
+
+            this.canvas.add(this.safetyShroudObj);
+            // send to bottom so it doesn't overlap object selection boxes
+            this.canvas.sendObjectToBack(this.safetyShroudObj);
+        } else {
+            if (this.safetyShroudObj) {
+                this.canvas.remove(this.safetyShroudObj);
+                this.safetyShroudObj = null;
+            }
+        }
+        this.canvas.requestRenderAll();
+    }
+
+    public toggleDPIHeatmap(show: boolean) {
+        const objects = this.canvas.getObjects();
+        let changed = false;
+
+        objects.forEach(obj => {
+            if (obj.type === 'image') {
+                const img = obj as fabric.Image;
+
+                // Clear existing filters
+                img.filters = [];
+
+                if (show) {
+                    // We assume images were imported at 300DPI natively
+                    // DPICalculator throws if the physical scale drops it below 150DPI
+                    const isLowRes = DPICalculator.checkLowDPI(img.scaleX || 1, img.scaleY || 1, 300);
+
+                    if (isLowRes) {
+                        // Apply a highly visible red tint filter
+                        const filter = new fabric.filters.BlendColor({
+                            color: 'red',
+                            mode: 'tint',
+                            alpha: 0.6
+                        });
+                        img.filters.push(filter);
+                    }
+                }
+
+                img.applyFilters();
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            this.canvas.requestRenderAll();
+        }
     }
 }
