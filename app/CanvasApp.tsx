@@ -12,7 +12,7 @@ import {
     Minus, Plus, Undo2, Redo2, Share2, LayoutGrid, Layers,
     Sparkles, Download, ZoomIn, ZoomOut, Search,
     Cloud, MessageSquare, BarChart2, FolderOpen, PenTool, Grid, Blocks,
-    Wand2, Settings2, Clock, Sticker, ArrowUpToLine, ArrowDownToLine
+    Wand2, Settings2, Clock, Sticker, ArrowUpToLine, ArrowDownToLine, MousePointer2, Pen
 } from 'lucide-react';
 import { SessionAsset } from '@/core/types';
 import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
@@ -142,6 +142,23 @@ export default function CanvasApp() {
     // Find active text object
     const activeObj = designState.objects.find(o => o.id === designState.activeObjectId) as any;
     const isTextSelected = activeObj && (activeObj.type === 'textbox' || activeObj.type === 'text');
+
+    // Drawing State
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [brushType, setBrushType] = useState('marker');
+    const [brushColor, setBrushColor] = useState('#8b5cf6');
+    const [brushWidth, setBrushWidth] = useState(12);
+
+    // Sync drawing state to Fabric whenever it changes
+    useEffect(() => {
+        if (fabricRef.current && activePanel === 'draw') {
+            fabricRef.current.toggleDrawingMode(isDrawing, { type: brushType, color: brushColor, width: brushWidth });
+        } else if (fabricRef.current && activePanel !== 'draw' && isDrawing) {
+            // Auto-disable drawing if we navigate away from the Draw tab
+            setIsDrawing(false);
+            fabricRef.current.toggleDrawingMode(false, { type: brushType, color: brushColor, width: brushWidth });
+        }
+    }, [isDrawing, brushType, brushColor, brushWidth, activePanel]);
 
     if (!mounted) return null;
 
@@ -585,27 +602,153 @@ export default function CanvasApp() {
                             </div>
                         )}
 
-                        {/* Draw Placeholder */}
+                        {/* Draw Panel */}
                         {activePanel === 'draw' && (
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
-                                <PenTool size={40} className="text-white/10 mb-3" />
-                                <p className="text-sm text-white/40 font-medium">Drawing tools coming soon</p>
+                            <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="p-4 border-b border-white/5 bg-[#252536] z-10 shrink-0 flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-white/90">Draw</h3>
+                                    <button
+                                        onClick={() => setIsDrawing(!isDrawing)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isDrawing ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                                    >
+                                        {isDrawing ? 'Drawing Active' : 'Enable Drawing'}
+                                    </button>
+                                </div>
+                                <div className={`flex-1 overflow-y-auto p-4 space-y-6 ${!isDrawing ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
+
+                                    {/* Brush Types */}
+                                    <div className="space-y-3">
+                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Pens</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { id: 'pen', icon: <PenTool size={20} />, label: 'Pen' },
+                                                { id: 'marker', icon: <Pen size={20} />, label: 'Marker' },
+                                                { id: 'highlighter', icon: <MousePointer2 size={20} className="rotate-90" />, label: 'Highlighter' }
+                                            ].map(brush => (
+                                                <button
+                                                    key={brush.id}
+                                                    onClick={() => setBrushType(brush.id)}
+                                                    className={`h-20 rounded-xl flex flex-col items-center justify-center gap-2 border transition-all ${brushType === brush.id ? 'bg-violet-500/10 border-violet-500/50 text-violet-400' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80'}`}
+                                                >
+                                                    {brush.icon}
+                                                    <span className="text-[10px] font-medium">{brush.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Brush Color */}
+                                    <div className="space-y-3">
+                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Color</p>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {['#ffffff', '#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e'].map(color => (
+                                                <button
+                                                    key={color}
+                                                    onClick={() => setBrushColor(color)}
+                                                    className={`w-8 h-8 rounded-full border-2 transition-all mx-auto ${brushColor === color ? 'border-violet-500 scale-110 shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'border-white/20 hover:border-white/50'}`}
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Brush Weight */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Weight</p>
+                                            <span className="text-xs text-white/80 w-8 text-right bg-white/10 rounded px-1">{brushWidth}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="100"
+                                            value={brushWidth}
+                                            onChange={(e) => setBrushWidth(parseInt(e.target.value))}
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Projects Placeholder */}
+                        {/* Projects Panel */}
                         {activePanel === 'projects' && (
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
-                                <FolderOpen size={40} className="text-white/10 mb-3" />
-                                <p className="text-sm text-white/40 font-medium">Your projects will appear here</p>
+                            <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="p-4 border-b border-white/5 bg-[#252536] z-10 shrink-0">
+                                    <div className="relative">
+                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 mt-[-1px] text-white/30" />
+                                        <input placeholder="Search your projects" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all font-medium" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                                    {/* Folders */}
+                                    <div className="space-y-3">
+                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Folders</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['Uploads', 'Purchased', 'Starred', 'Trash'].map((folder) => (
+                                                <button key={folder} className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg p-3 flex flex-col items-center justify-center gap-2 transition-all group">
+                                                    <FolderOpen size={24} className="text-white/40 group-hover:text-violet-400" />
+                                                    <span className="text-[11px] font-semibold text-white/80 group-hover:text-white">{folder}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Recent Designs */}
+                                    <div className="space-y-3">
+                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Recent Designs</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[1, 2, 3, 4].map(i => (
+                                                <div key={i} className="group cursor-pointer">
+                                                    <div className="aspect-video bg-white/5 border border-white/5 rounded-lg mb-2 overflow-hidden relative">
+                                                        <div className={`absolute inset-0 opacity-20 bg-gradient-to-br from-violet-500/50 to-fuchsia-500/50`} />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 backdrop-blur-sm transition-all">
+                                                            <button className="bg-white text-black px-3 py-1.5 rounded-md text-xs font-bold">Edit</button>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[11px] font-medium text-white/90">Untitled Design {i}</p>
+                                                    <p className="text-[9px] text-white/50 mt-0.5">Edited {i}h ago</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Apps Placeholder */}
+                        {/* Apps Panel */}
                         {activePanel === 'apps' && (
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
-                                <Blocks size={40} className="text-white/10 mb-3" />
-                                <p className="text-sm text-white/40 font-medium">App integrations coming soon</p>
+                            <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="p-4 border-b border-white/5 bg-[#252536] z-10 shrink-0">
+                                    <h3 className="text-sm font-semibold text-white/90 mb-3">Discover apps</h3>
+                                    <div className="relative">
+                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 mt-[-1px] text-white/30" />
+                                        <input placeholder="Search apps" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all font-medium" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                                    <div className="space-y-3">
+                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Trending Workflows</p>
+                                        <div className="space-y-2">
+                                            {[
+                                                { icon: <Sparkles className="text-blue-400" size={20} />, name: 'Magic Image Gen', desc: 'Create images with AI' },
+                                                { icon: <Grid className="text-green-400" size={20} />, name: 'QR Code Maker', desc: 'Add interactive codes' },
+                                                { icon: <Cloud className="text-sky-400" size={20} />, name: 'Google Drive', desc: 'Import your files' },
+                                                { icon: <Type className="text-fuchsia-400" size={20} />, name: 'TypeCraft', desc: 'Warp and style text' }
+                                            ].map(app => (
+                                                <button key={app.name} className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center gap-3 transition-colors group">
+                                                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                                        {app.icon}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-[12px] font-bold text-white/90 group-hover:text-white">{app.name}</h4>
+                                                        <p className="text-[10px] text-white/50">{app.desc}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </aside>

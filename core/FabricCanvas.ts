@@ -594,6 +594,29 @@ export class FabricCanvas {
         this.syncToStore();
     }
 
+    public toggleDrawingMode(isDrawing: boolean, settings: { type: string, color: string, width: number }) {
+        this.canvas.isDrawingMode = isDrawing;
+        if (!isDrawing) return;
+
+        // Configure brush based on type
+        if (settings.type === 'pen' || settings.type === 'highlighter') {
+            this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+        } else if (settings.type === 'marker') {
+            this.canvas.freeDrawingBrush = new fabric.CircleBrush(this.canvas);
+        }
+
+        if (this.canvas.freeDrawingBrush) {
+            this.canvas.freeDrawingBrush.color = settings.color;
+            this.canvas.freeDrawingBrush.width = settings.width;
+        }
+
+        // Ensure paths created have IDs so they can be deleted
+        this.canvas.on('path:created', (opt: any) => {
+            opt.path.set({ id: `path_${Math.random().toString(36).substr(2, 9)}` });
+            this.syncToStore();
+        });
+    }
+
     public updateActiveObjectProperty(key: string, value: any) {
         const activeObj = this.canvas.getActiveObject();
         if (activeObj) {
