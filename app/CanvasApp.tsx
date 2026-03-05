@@ -230,23 +230,25 @@ export default function CanvasApp() {
                         </button>
                         {/* Font size */}
                         <div className="flex items-center bg-white/10 rounded-lg overflow-hidden">
-                            <button className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Minus size={14} /></button>
+                            <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', Math.max(8, (activeObj.fontSize || 24) - 2))} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Minus size={14} /></button>
                             <span className="text-sm text-white/90 px-2 min-w-[32px] text-center">{Math.round(activeObj.fontSize || 24)}</span>
-                            <button className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Plus size={14} /></button>
+                            <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj.fontSize || 24) + 2)} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Plus size={14} /></button>
                         </div>
                         <div className="w-px h-6 bg-white/10 mx-1" />
-                        {/* Color dot */}
-                        <button className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Text Color" />
+                        {/* Color */}
+                        <label className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Text Color">
+                            <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.fill as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('fill', e.target.value)} />
+                        </label>
                         <div className="w-px h-6 bg-white/10 mx-1" />
                         {/* B I U */}
-                        <button onClick={() => fabricRef.current?.canvas.getActiveObject()?.set('fontWeight', 'bold') && fabricRef.current?.canvas.requestRenderAll()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Bold size={16} /></button>
-                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Italic size={16} /></button>
-                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><Underline size={16} /></button>
+                        <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontWeight', 'bold', 'normal')} className={`p-1.5 rounded-md transition-colors ${activeObj.fontWeight === 'bold' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><Bold size={16} /></button>
+                        <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontStyle', 'italic', 'normal')} className={`p-1.5 rounded-md transition-colors ${activeObj.fontStyle === 'italic' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><Italic size={16} /></button>
+                        <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('underline', true, false)} className={`p-1.5 rounded-md transition-colors ${activeObj.underline ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><Underline size={16} /></button>
                         <div className="w-px h-6 bg-white/10 mx-1" />
                         {/* Alignment */}
-                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignLeft size={16} /></button>
-                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignCenter size={16} /></button>
-                        <button className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"><AlignRight size={16} /></button>
+                        <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'left')} className={`p-1.5 rounded-md transition-colors ${activeObj.textAlign === 'left' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><AlignLeft size={16} /></button>
+                        <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'center')} className={`p-1.5 rounded-md transition-colors ${activeObj.textAlign === 'center' || !activeObj.textAlign ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><AlignCenter size={16} /></button>
+                        <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'right')} className={`p-1.5 rounded-md transition-colors ${activeObj.textAlign === 'right' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}><AlignRight size={16} /></button>
                         <div className="w-px h-6 bg-white/10 mx-1" />
                         <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">Effects</button>
                         <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors">Animate</button>
@@ -553,11 +555,12 @@ export default function CanvasApp() {
                                                 {category.items.map(item => (
                                                     <button
                                                         key={item.id}
-                                                        onClick={() => {
+                                                        onClick={async () => {
                                                             fabricRef.current?.resizeWorkspace(item.width, item.height);
                                                             if (item.payload) {
-                                                                fabricRef.current?.loadTemplateJSON(item.payload);
+                                                                await fabricRef.current?.loadTemplateJSON(item.payload);
                                                             }
+                                                            fabricRef.current?.zoomToFit();
                                                         }}
                                                         className="aspect-[4/3] bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 hover:border-violet-500/50 transition-all cursor-pointer flex flex-col items-center justify-center p-2 text-center group overflow-hidden relative"
                                                     >

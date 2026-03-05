@@ -214,9 +214,65 @@ export const HC_BRANDS_CATALOG: TemplateCategory[] = [
         title: "Personalized Gifts",
         items: [
             { id: generateId('gift'), name: "Engraved cutting boards", width: 1200, height: 800, category: "Gifts" },
-            { id: generateId('gift'), name: "Personalized drinkware", width: 400, height: 800, category: "Gifts" },
-            { id: generateId('gift'), name: "Gift plaques", width: 800, height: 1000, category: "Gifts" },
             { id: generateId('gift'), name: "Awards", width: 600, height: 800, category: "Gifts" },
         ]
     }
 ];
+
+// Dynamically Enrich the Catalog on Boot
+// This prevents us from having to hardcode 80+ Fabric JSON payloads by hand
+(() => {
+    const backgrounds = [
+        "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80", // Abstract Purple
+        "https://images.unsplash.com/photo-1557683316-973673baf926?w=800&q=80", // Abstract Gradient
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80", // Liquid
+        "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80", // Soft colors
+    ];
+
+    HC_BRANDS_CATALOG.forEach(category => {
+        category.items.forEach((item, index) => {
+            // Assign a random background image placeholder if missing
+            if (!item.image) {
+                item.image = backgrounds[index % backgrounds.length];
+            }
+
+            // Generate a smart, perfectly scaled layout placeholder if missing
+            if (!item.payload) {
+                // Determine a safe font size (10% of the smallest bound)
+                const safeFontSize = Math.min(item.width, item.height) * 0.15;
+
+                item.payload = {
+                    version: "6.0.0",
+                    objects: [
+                        {
+                            type: "rect",
+                            left: 0,
+                            top: 0,
+                            width: item.width,
+                            height: item.height,
+                            fill: "#ffffff",
+                            selectable: false,
+                            evented: false,
+                            rx: 8,
+                            ry: 8
+                        },
+                        {
+                            type: "textbox",
+                            left: item.width / 2,
+                            top: item.height / 2,
+                            width: item.width * 0.8,
+                            text: item.name.toUpperCase(),
+                            fontSize: safeFontSize,
+                            fontWeight: "bold",
+                            fontFamily: "Inter",
+                            fill: "#1e1e2e",
+                            textAlign: "center",
+                            originX: "center",
+                            originY: "center"
+                        }
+                    ]
+                };
+            }
+        });
+    });
+})();

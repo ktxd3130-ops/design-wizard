@@ -594,6 +594,27 @@ export class FabricCanvas {
         this.syncToStore();
     }
 
+    public updateActiveObjectProperty(key: string, value: any) {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            activeObj.set(key, value);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+            this.updateActiveObjectBox(); // In case font/size changed box bounds
+        }
+    }
+
+    public toggleActiveObjectProperty(key: string, onValue: any, offValue: any) {
+        const activeObj = this.canvas.getActiveObject();
+        if (activeObj) {
+            const current = activeObj.get(key);
+            activeObj.set(key, current === onValue ? offValue : onValue);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+            this.updateActiveObjectBox();
+        }
+    }
+
     public async removeBackgroundForActiveObject() {
         const activeObj = this.canvas.getActiveObject();
         if (!activeObj || activeObj.type !== 'image') return;
