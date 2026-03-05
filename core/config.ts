@@ -9,6 +9,7 @@ export interface BrandConfig {
     };
     typography: {
         defaultFont: string;
+        fonts: string[];
     };
 }
 
@@ -22,7 +23,7 @@ const BRANDS: Record<string, BrandConfig> = {
             accent: '#fb923c', // orange-400
             surface: '#fff7ed', // orange-50
         },
-        typography: { defaultFont: 'sans-serif' }
+        typography: { defaultFont: 'sans-serif', fonts: ['Inter', 'Roboto', 'Open Sans', 'Comic Sans MS'] }
     },
     stickylife: {
         id: 'stickylife',
@@ -33,7 +34,7 @@ const BRANDS: Record<string, BrandConfig> = {
             accent: '#60a5fa', // blue-400
             surface: '#eff6ff', // blue-50
         },
-        typography: { defaultFont: 'sans-serif' }
+        typography: { defaultFont: 'sans-serif', fonts: ['Lato', 'Montserrat', 'Inter', 'Oswald'] }
     },
     hcbrands: {
         id: 'hcbrands',
@@ -44,7 +45,7 @@ const BRANDS: Record<string, BrandConfig> = {
             accent: '#34d399', // emerald-400
             surface: '#ecfdf5', // emerald-50
         },
-        typography: { defaultFont: 'serif' }
+        typography: { defaultFont: 'serif', fonts: ['Georgia', 'Times New Roman', 'Arial', 'Courier New'] }
     }
 };
 

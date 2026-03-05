@@ -148,6 +148,18 @@ export class FabricCanvas {
             }
         });
 
+        // Architect: Native Inline Editing
+        this.canvas.on('mouse:dblclick', (opt) => {
+            const target = opt.target as any;
+            if (target && (target.type === 'i-text' || target.type === 'textbox' || target.type === 'text')) {
+                if (target.enterEditing) {
+                    target.enterEditing();
+                    target.selectAll();
+                    this.canvas.requestRenderAll();
+                }
+            }
+        });
+
         // UI-UX Agent QA: Track active object selection for Bottom Sheet routing
         this.canvas.on('selection:created', (e) => this.handleSelection(e));
         this.canvas.on('selection:updated', (e) => this.handleSelection(e));
@@ -500,7 +512,7 @@ export class FabricCanvas {
         textStr: string = 'Your text here',
         options: { fontSize?: number, fontWeight?: string | number } = {}
     ) {
-        const text = new fabric.Textbox(textStr, {
+        const text = new fabric.IText(textStr, {
             left: 100,
             top: 100,
             width: 250,

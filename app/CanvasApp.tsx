@@ -30,6 +30,9 @@ export default function CanvasApp() {
     const [finalPayload, setFinalPayload] = useState<any>(null);
     const [brandConfig, setBrandConfig] = useState<BrandConfig | null>(null);
     const [activePanel, setActivePanel] = useState<SidebarPanel>('text');
+    const [isRemovingBg, setIsRemovingBg] = useState(false);
+    const [isGenFillActive, setIsGenFillActive] = useState(false);
+    const [genFillPrompt, setGenFillPrompt] = useState('');
     const [zoom, setZoom] = useState(100);
     const canvasId = useRef(`design - canvas - ${Math.random().toString(36).substr(2, 9)} `);
 
@@ -161,6 +164,35 @@ export default function CanvasApp() {
         }
     }, [isDrawing, brushType, brushColor, brushWidth, activePanel]);
 
+    const handleRemoveBgMock = async () => {
+        if (!fabricRef.current) return;
+        const activeObj = fabricRef.current.canvas.getActiveObject() as any;
+        if (!activeObj || activeObj.type !== 'image') return;
+
+        setIsRemovingBg(true);
+        // Mock API latency
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Mock transparent PNG cutout
+        const mockCutoutUrl = 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=500&auto=format&fit=crop';
+
+        fabricRef.current.addImage(mockCutoutUrl, activeObj.id);
+        fabricRef.current.canvas.remove(activeObj);
+        setIsRemovingBg(false);
+    };
+
+    const handleGenFillMock = async () => {
+        if (!fabricRef.current || !genFillPrompt.trim()) return;
+        setIsGenFillActive(true);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Inject a generated mockup image
+        const generatedMockUrl = 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=500&auto=format&fit=crop';
+        fabricRef.current.addImage(generatedMockUrl, crypto.randomUUID());
+        setIsGenFillActive(false);
+        setGenFillPrompt('');
+    };
+
     if (!mounted) return null;
 
     // ────────────────────────────────────────────────────────────
@@ -242,10 +274,27 @@ export default function CanvasApp() {
             <div className="h-[48px] bg-[#2a2a3d] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
                 {isTextSelected ? (
                     <>
-                        {/* Font family */}
-                        <button className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-sm text-white/90 min-w-[140px] transition-colors">
-                            {activeObj.fontFamily || 'Sans Serif'} <ChevronRight size={12} className="text-white/40 rotate-90" />
-                        </button>
+                        {/* Font family restricted by Brand Kit */}
+                        <div className="relative group/font">
+                            <button className="flex items-center justify-between gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-sm text-white/90 min-w-[140px] transition-colors cursor-pointer">
+                                <span>{activeObj.fontFamily || 'Sans Serif'}</span> <ChevronDown size={12} className="text-white/40 group-hover/font:rotate-180 transition-transform" />
+                            </button>
+                            <div className="absolute top-full left-0 mt-1 w-[180px] bg-[#2a2a3d] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/font:opacity-100 group-hover/font:visible transition-all z-50 overflow-hidden flex flex-col">
+                                {(!isAdmin && brandConfig?.typography.fonts) ? (
+                                    brandConfig.typography.fonts.map(font => (
+                                        <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors font-medium">
+                                            {font} <span className="text-[10px] text-violet-400 ml-1 rounded-sm bg-violet-400/10 px-1 py-0.5">Brand</span>
+                                        </button>
+                                    ))
+                                ) : (
+                                    ['Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'].map(font => (
+                                        <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                                            {font}
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                         {/* Font size */}
                         <div className="flex items-center bg-white/10 rounded-lg overflow-hidden">
                             <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', Math.max(8, (activeObj.fontSize || 24) - 2))} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Minus size={14} /></button>
@@ -728,25 +777,29 @@ export default function CanvasApp() {
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                    <div className="space-y-3">
-                                        <p className="text-[11px] font-bold tracking-wider uppercase text-white/50">Trending Workflows</p>
-                                        <div className="space-y-2">
-                                            {[
-                                                { icon: <Sparkles className="text-blue-400" size={20} />, name: 'Magic Image Gen', desc: 'Create images with AI' },
-                                                { icon: <Grid className="text-green-400" size={20} />, name: 'QR Code Maker', desc: 'Add interactive codes' },
-                                                { icon: <Cloud className="text-sky-400" size={20} />, name: 'Google Drive', desc: 'Import your files' },
-                                                { icon: <Type className="text-fuchsia-400" size={20} />, name: 'TypeCraft', desc: 'Warp and style text' }
-                                            ].map(app => (
-                                                <button key={app.name} className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center gap-3 transition-colors group">
-                                                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                                        {app.icon}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-[12px] font-bold text-white/90 group-hover:text-white">{app.name}</h4>
-                                                        <p className="text-[10px] text-white/50">{app.desc}</p>
-                                                    </div>
-                                                </button>
-                                            ))}
+                                    <div className="space-y-4">
+                                        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                                                    <Wand2 size={16} className="text-white" />
+                                                </div>
+                                                <h4 className="text-sm font-bold text-white">Generative Fill</h4>
+                                            </div>
+                                            <p className="text-xs text-white/60 mb-3">Describe what you want to add to the canvas.</p>
+                                            <textarea
+                                                value={genFillPrompt}
+                                                onChange={(e) => setGenFillPrompt(e.target.value)}
+                                                placeholder="E.g. A realistic red apple..."
+                                                className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-sm text-white placeholder-white/30 resize-none h-20 focus:outline-none focus:border-violet-500 mb-3"
+                                            />
+                                            <button
+                                                onClick={handleGenFillMock}
+                                                disabled={isGenFillActive || !genFillPrompt.trim()}
+                                                className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:hover:bg-violet-600 text-white font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                            >
+                                                {isGenFillActive ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                                Generate
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -810,8 +863,12 @@ export default function CanvasApp() {
                                         </>
                                     ) : (
                                         <>
-                                            <button className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer text-violet-600">
-                                                <Sparkles size={14} /> AI Remove BG
+                                            <button
+                                                onClick={handleRemoveBgMock}
+                                                disabled={isRemovingBg}
+                                                className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer text-violet-600 disabled:opacity-50"
+                                            >
+                                                {isRemovingBg ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Remove BG
                                             </button>
                                             <div className="w-px h-4 bg-black/10 mx-1" />
                                             <button className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer">
@@ -826,6 +883,8 @@ export default function CanvasApp() {
 
                                     {/* Global Tools (Always appear for any object) */}
                                     <div className="w-px h-4 bg-black/10 mx-1" />
+                                    <button onClick={() => fabricRef.current?.bringForward()} className="p-1.5 text-gray-500 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors" title="Bring Forward"><ArrowUpToLine size={14} /></button>
+                                    <button onClick={() => fabricRef.current?.sendBackwards()} className="p-1.5 text-gray-500 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors" title="Send Backward"><ArrowDownToLine size={14} /></button>
                                     <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-gray-500 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors" title="Duplicate"><Copy size={14} /></button>
                                     <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded cursor-pointer transition-colors" title="Delete"><Trash2 size={14} /></button>
 
