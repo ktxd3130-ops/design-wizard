@@ -8,10 +8,11 @@ import { PlaceholderService } from './services/PlaceholderService';
 export class FabricCanvas {
     public canvas: fabric.Canvas;
 
-    private snappingDistance = 10;
+    private snappingDistance = 5;
     private guideLines: fabric.Line[] = [];
 
-    // Touch panning state
+    // Touch & Panning state
+    private isSpacePan = false;
     private isDragging = false;
     private lastPosX = 0;
     private lastPosY = 0;
@@ -20,17 +21,38 @@ export class FabricCanvas {
     private syncPending = false;
     private rafId = 0;
 
+    // History (Undo/Redo)
+    private history: any[] = [];
+    private historyIndex = -1;
+    private isHistoryAction = false;
+
     // 1:1 Scale Dimension Tracking
     public baseWidth = 800;
     public baseHeight = 600;
 
     constructor(canvasElement: HTMLCanvasElement) {
+        // Architect: Style global selection boundaries to match brand
+        fabric.Object.prototype.set({
+            borderColor: '#8b5cf6', // brand violet
+            cornerColor: '#ffffff',
+            cornerStrokeColor: '#8b5cf6',
+            cornerSize: 10,
+            cornerStyle: 'circle',
+            transparentCorners: false,
+            padding: 4
+        });
+
         this.canvas = new fabric.Canvas(canvasElement, {
             width: 800,
             height: 600,
             backgroundColor: '#ffffff',
             preserveObjectStacking: true,
         });
+
+        // Architect: History listeners
+        this.canvas.on('object:added', () => this.saveHistory());
+        this.canvas.on('object:modified', () => this.saveHistory());
+        this.canvas.on('object:removed', () => this.saveHistory());
 
         // Architect: Integrate types.ts into object:moving and object:scaling
         this.canvas.on('object:moving', this.handleObjectModification.bind(this));
@@ -72,11 +94,44 @@ export class FabricCanvas {
             this.updateActiveObjectBox();
         });
 
+        this.canvas.on('mouse:down', (opt) => {
+            if (this.isSpacePan && opt.e) {
+                this.isDragging = true;
+                const e = opt.e as MouseEvent | TouchEvent;
+                this.lastPosX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+                this.lastPosY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+                this.canvas.defaultCursor = 'grabbing';
+                this.canvas.setCursor('grabbing');
+                this.canvas.selection = false;
+            }
+        });
+
+        this.canvas.on('mouse:move', (opt) => {
+            if (this.isDragging && this.isSpacePan && opt.e) {
+                const e = opt.e as MouseEvent | TouchEvent;
+                const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+                const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+
+                const vpt = this.canvas.viewportTransform;
+                if (vpt) {
+                    vpt[4] += clientX - this.lastPosX;
+                    vpt[5] += clientY - this.lastPosY;
+                    this.canvas.requestRenderAll();
+                    this.lastPosX = clientX;
+                    this.lastPosY = clientY;
+                }
+            }
+        });
+
         this.canvas.on('mouse:up', () => {
             this.isDragging = false;
+            this.canvas.selection = true;
             this.clearGuideLines();
             this.canvas.renderAll();
         });
+
+        // Architect: Global Hotkey Manager
+        this.setupGlobalHotkeys();
 
         // Architect: Enable Native Touch Gestures (Pinch/Zoom)
         this.canvas.on('mouse:wheel', (opt) => {
@@ -168,6 +223,95 @@ export class FabricCanvas {
         });
 
         this.loadInitialState();
+    }
+
+    private setupGlobalHotkeys() {
+        if (typeof window === 'undefined') return;
+
+        document.addEventListener('keydown', (e) => {
+            const target = e.target as HTMLElement;
+            const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+            // Allow Spacebar panning regardless of input focus IF the user is explicitly forcing drag
+            if (e.code === 'Space' && !isInput) {
+                this.isSpacePan = true;
+                this.canvas.defaultCursor = 'grab';
+                e.preventDefault();
+                return;
+            }
+
+            if (isInput) return; // Ignore hotkeys when typing
+
+            const isCmdCtrl = e.metaKey || e.ctrlKey;
+            const activeObj = this.canvas.getActiveObject();
+
+            switch (e.key.toLowerCase()) {
+                case 't':
+                    if (!isCmdCtrl) {
+                        this.addText();
+                        e.preventDefault();
+                    }
+                    break;
+                case 'r':
+                    if (!isCmdCtrl) {
+                        this.addShape('rect');
+                        e.preventDefault();
+                    }
+                    break;
+                case 'o':
+                    if (!isCmdCtrl) {
+                        this.addShape('circle');
+                        e.preventDefault();
+                    }
+                    break;
+                case 'delete':
+                case 'backspace':
+                    if (activeObj && !(activeObj as any).isEditing) {
+                        this.deleteSelected();
+                        e.preventDefault();
+                    }
+                    break;
+                case 'd':
+                    if (isCmdCtrl) {
+                        this.copy().then(() => this.paste());
+                        e.preventDefault();
+                    }
+                    break;
+                case 'g':
+                    if (isCmdCtrl) {
+                        if (e.shiftKey) {
+                            // Ungroup mock (Fabric 6 handles grouping differently, omitting for MVP unless requested)
+                        } else {
+                            // Group mock
+                        }
+                        e.preventDefault();
+                    }
+                    break;
+                case 'arrowup':
+                case 'arrowdown':
+                case 'arrowleft':
+                case 'arrowright':
+                    if (activeObj && !(activeObj as any).isEditing) {
+                        const step = e.shiftKey ? 10 : 1;
+                        if (e.key.toLowerCase() === 'arrowup') activeObj.set('top', Math.round((activeObj.top as number) - step));
+                        if (e.key.toLowerCase() === 'arrowdown') activeObj.set('top', Math.round((activeObj.top as number) + step));
+                        if (e.key.toLowerCase() === 'arrowleft') activeObj.set('left', Math.round((activeObj.left as number) - step));
+                        if (e.key.toLowerCase() === 'arrowright') activeObj.set('left', Math.round((activeObj.left as number) + step));
+                        activeObj.setCoords();
+                        this.canvas.requestRenderAll();
+                        this.syncToStore();
+                        e.preventDefault();
+                    }
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                this.isSpacePan = false;
+                this.canvas.defaultCursor = 'default';
+            }
+        });
     }
 
     private handleSelection(e: any) {
@@ -271,6 +415,50 @@ export class FabricCanvas {
             this.syncToStore();
         } catch (err) {
             console.error("Failed to load template payload:", err);
+        }
+        // Initial empty state for history
+        this.saveHistory();
+    }
+
+    private saveHistory() {
+        if (this.isHistoryAction) return;
+
+        const json = (this.canvas as any).toJSON(['id', 'name', 'locked']);
+
+        // If we are rewound and saving, truncate future history
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+
+        this.history.push(json);
+        this.historyIndex++;
+
+        // Add a gentle cap to history to avoid blowing up memory with 50MB blobs
+        if (this.history.length > 50) {
+            this.history.shift();
+            this.historyIndex--;
+        }
+    }
+
+    public async undo() {
+        if (this.historyIndex > 0) {
+            this.isHistoryAction = true;
+            this.historyIndex--;
+            await this.canvas.loadFromJSON(this.history[this.historyIndex]);
+            this.canvas.renderAll();
+            this.syncToStore();
+            this.isHistoryAction = false;
+        }
+    }
+
+    public async redo() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.isHistoryAction = true;
+            this.historyIndex++;
+            await this.canvas.loadFromJSON(this.history[this.historyIndex]);
+            this.canvas.renderAll();
+            this.syncToStore();
+            this.isHistoryAction = false;
         }
     }
 
@@ -869,6 +1057,27 @@ export class FabricCanvas {
         });
 
         // Ensure internal pan is 0 so the DOM wrapper represents exact bounds
+        const vpt = this.canvas.viewportTransform;
+        if (vpt) {
+            vpt[4] = 0;
+            vpt[5] = 0;
+        }
+
+        this.canvas.requestRenderAll();
+    }
+
+    /**
+     * Update the zoom from UI sliders (e.g. 150 = 1.5x scale)
+     */
+    public setManualZoom(zoomPercent: number) {
+        const scale = zoomPercent / 100;
+        this.canvas.setZoom(scale);
+        this.canvas.setDimensions({
+            width: this.baseWidth * scale,
+            height: this.baseHeight * scale
+        });
+
+        // Let the scroll container handle the pan, keep Fabric's internal view centered
         const vpt = this.canvas.viewportTransform;
         if (vpt) {
             vpt[4] = 0;
