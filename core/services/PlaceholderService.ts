@@ -1,8 +1,11 @@
 export const MOCK_USER_PROFILE: Record<string, string> = {
     '{{USER_NAME}}': 'Kendall Dale',
-    '{{EMAIL}}': 'contact@example.com',
-    '{{PHONE}}': '555-0199',
-    '{{COMPANY}}': 'Design Wizard Inc.'
+    '{{FIRST_NAME}}': 'Kendall',
+    '{{EMAIL}}': 'hello@hcbrands.com',
+    '{{PHONE}}': '1-800-272-3729',
+    '{{COMPANY}}': 'HC Brands',
+    '{{COMPANY_NAME}}': 'HC Brands',
+    '{{WEBSITE}}': 'hcbrands.com'
 };
 
 export class PlaceholderService {

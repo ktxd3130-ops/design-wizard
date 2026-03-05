@@ -107,6 +107,47 @@ export class FabricCanvas {
             opt.e.stopPropagation();
         });
 
+        // Architect: Mobile Multitouch (Pinch to Zoom)
+        // @ts-ignore - Fabric.js types don't officially include touch events without augmentation
+        this.canvas.on('touch:gesture', (opt: any) => {
+            if (opt.e.touches && opt.e.touches.length === 2) {
+                let zoom = this.canvas.getZoom();
+                zoom *= opt.scale;
+
+                if (zoom > 5) zoom = 5;
+                if (zoom < 0.1) zoom = 0.1;
+
+                this.canvas.setZoom(zoom);
+                this.canvas.setDimensions({
+                    width: this.baseWidth * zoom,
+                    height: this.baseHeight * zoom
+                });
+
+                const vpt = this.canvas.viewportTransform;
+                if (vpt) {
+                    vpt[4] = 0;
+                    vpt[5] = 0;
+                }
+                this.canvas.requestRenderAll();
+            }
+        });
+
+        // Track touch panning for mobile devices
+        // @ts-ignore - Fabric.js types don't officially include touch events without augmentation
+        this.canvas.on('touch:drag', (opt: any) => {
+            if (this.isDragging && opt.e.touches) {
+                const e = opt.e.touches[0];
+                const vpt = this.canvas.viewportTransform;
+                if (vpt) {
+                    vpt[4] += e.clientX - this.lastPosX;
+                    vpt[5] += e.clientY - this.lastPosY;
+                    this.canvas.requestRenderAll();
+                    this.lastPosX = e.clientX;
+                    this.lastPosY = e.clientY;
+                }
+            }
+        });
+
         // UI-UX Agent QA: Track active object selection for Bottom Sheet routing
         this.canvas.on('selection:created', (e) => this.handleSelection(e));
         this.canvas.on('selection:updated', (e) => this.handleSelection(e));
@@ -248,61 +289,63 @@ export class FabricCanvas {
         this.syncToStore();
     }
 
+    private snapRafId = 0;
+
     private handleSnapping(target: any) {
-        this.clearGuideLines();
+        if (this.snapRafId) cancelAnimationFrame(this.snapRafId);
 
-        const canvasWidth = this.canvas.getWidth();
-        const canvasHeight = this.canvas.getHeight();
-        const safeZone = useDesignStore.getState().state.safeZoneMargin;
-        const centerX = canvasWidth / 2;
-        const centerY = canvasHeight / 2;
+        this.snapRafId = requestAnimationFrame(() => {
+            this.clearGuideLines();
 
-        const objWidth = target.getScaledWidth();
-        const objHeight = target.getScaledHeight();
-        const objCenterX = target.left + objWidth / 2;
-        const objCenterY = target.top + objHeight / 2;
+            const canvasWidth = this.canvas.getWidth();
+            const canvasHeight = this.canvas.getHeight();
+            // Optional: fallback to 0 if zustand isn't ready
+            const safeZone = useDesignStore.getState().state?.safeZoneMargin || 25;
+            const centerX = canvasWidth / 2;
+            const centerY = canvasHeight / 2;
 
-        let snapped = false;
+            const objWidth = target.getScaledWidth();
+            const objHeight = target.getScaledHeight();
+            const objCenterX = target.left + objWidth / 2;
+            const objCenterY = target.top + objHeight / 2;
 
-        // Vertical Center Snap
-        if (Math.abs(objCenterX - centerX) < this.snappingDistance) {
-            target.set('left', centerX - objWidth / 2);
-            this.drawGuideLine([centerX, 0, centerX, canvasHeight]);
-            snapped = true;
-        }
+            let snapped = false;
 
-        // Horizontal Center Snap
-        if (Math.abs(objCenterY - centerY) < this.snappingDistance) {
-            target.set('top', centerY - objHeight / 2);
-            this.drawGuideLine([0, centerY, canvasWidth, centerY]);
-            snapped = true;
-        }
+            // X-Axis Magnetic Snapping
+            if (Math.abs(objCenterX - centerX) < this.snappingDistance) {
+                target.set('left', centerX - objWidth / 2);
+                this.drawGuideLine([centerX, 0, centerX, canvasHeight]);
+                snapped = true;
+            } else if (Math.abs(target.left - safeZone) < this.snappingDistance) {
+                target.set('left', safeZone);
+                this.drawGuideLine([safeZone, 0, safeZone, canvasHeight]);
+                snapped = true;
+            } else if (Math.abs((target.left + objWidth) - (canvasWidth - safeZone)) < this.snappingDistance) {
+                target.set('left', canvasWidth - safeZone - objWidth);
+                this.drawGuideLine([canvasWidth - safeZone, 0, canvasWidth - safeZone, canvasHeight]);
+                snapped = true;
+            }
 
-        // Safe Zone Edges Snap
-        if (Math.abs(target.left - safeZone) < this.snappingDistance) {
-            target.set('left', safeZone);
-            this.drawGuideLine([safeZone, 0, safeZone, canvasHeight]);
-            snapped = true;
-        }
-        if (Math.abs((target.left + objWidth) - (canvasWidth - safeZone)) < this.snappingDistance) {
-            target.set('left', canvasWidth - safeZone - objWidth);
-            this.drawGuideLine([canvasWidth - safeZone, 0, canvasWidth - safeZone, canvasHeight]);
-            snapped = true;
-        }
-        if (Math.abs(target.top - safeZone) < this.snappingDistance) {
-            target.set('top', safeZone);
-            this.drawGuideLine([0, safeZone, canvasWidth, safeZone]);
-            snapped = true;
-        }
-        if (Math.abs((target.top + objHeight) - (canvasHeight - safeZone)) < this.snappingDistance) {
-            target.set('top', canvasHeight - safeZone - objHeight);
-            this.drawGuideLine([0, canvasHeight - safeZone, canvasWidth, canvasHeight - safeZone]);
-            snapped = true;
-        }
+            // Y-Axis Magnetic Snapping
+            if (Math.abs(objCenterY - centerY) < this.snappingDistance) {
+                target.set('top', centerY - objHeight / 2);
+                this.drawGuideLine([0, centerY, canvasWidth, centerY]);
+                snapped = true;
+            } else if (Math.abs(target.top - safeZone) < this.snappingDistance) {
+                target.set('top', safeZone);
+                this.drawGuideLine([0, safeZone, canvasWidth, safeZone]);
+                snapped = true;
+            } else if (Math.abs((target.top + objHeight) - (canvasHeight - safeZone)) < this.snappingDistance) {
+                target.set('top', canvasHeight - safeZone - objHeight);
+                this.drawGuideLine([0, canvasHeight - safeZone, canvasWidth, canvasHeight - safeZone]);
+                snapped = true;
+            }
 
-        if (snapped) {
-            this.canvas.renderAll();
-        }
+            if (snapped) {
+                target.setCoords(); // Crucial for Fabric to understand the manual offset
+                this.canvas.requestRenderAll();
+            }
+        });
     }
 
     private generateThumbnail(): string {

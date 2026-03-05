@@ -12,7 +12,7 @@ import {
     Minus, Plus, Undo2, Redo2, Share2, LayoutGrid, Layers,
     Sparkles, Download, ZoomIn, ZoomOut, Search,
     Cloud, MessageSquare, BarChart2, FolderOpen, PenTool, Grid, Blocks,
-    Wand2, Settings2, Clock, Sticker, ArrowUpToLine, ArrowDownToLine, MousePointer2, Pen
+    Wand2, Settings2, Clock, Sticker, ArrowUpToLine, ArrowDownToLine, MousePointer2, Pen, ChevronDown, Crop
 } from 'lucide-react';
 import { SessionAsset } from '@/core/types';
 import { serializeForOpenMage, OrderValidationService } from '@/core/OpenMageAPI';
@@ -576,7 +576,7 @@ export default function CanvasApp() {
                                                         onClick={async () => {
                                                             fabricRef.current?.resizeWorkspace(item.width, item.height);
                                                             if (item.payload) {
-                                                                await fabricRef.current?.loadTemplateJSON(item.payload);
+                                                                await fabricRef.current?.injectTemplate(item.payload, item.width, item.height);
                                                             }
                                                             fabricRef.current?.zoomToFit();
                                                         }}
@@ -784,24 +784,57 @@ export default function CanvasApp() {
                             {/* Floating HUD anchored locally to the canvas container */}
                             {designState.activeObjectId && designState.activeObjectBox && (
                                 <div
-                                    className="absolute z-50 flex items-center gap-1.5 px-2 py-1.5 bg-[#1e1e2e]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-lg pointer-events-auto transition-transform"
+                                    className="absolute z-50 flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/5 rounded-[10px] pointer-events-auto transition-transform"
                                     style={{
                                         left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
-                                        top: designState.activeObjectBox.top - 48,
-                                        transform: 'translateX(-50%)' // Center exactly over the object
+                                        top: designState.activeObjectBox.top - 54, // Float exactly above
+                                        transform: 'translateX(-50%)',
+                                        fontFamily: "'Inter', sans-serif"
                                     }}
                                 >
-                                    <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Duplicate"><Copy size={14} /></button>
-                                    <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer" title="Delete"><Trash2 size={14} /></button>
-                                    <div className="w-px h-4 bg-white/10 mx-1" />
-                                    <button onClick={() => fabricRef.current?.bringForward()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Bring to Front"><ArrowUpToLine size={14} /></button>
-                                    <button onClick={() => fabricRef.current?.sendBackwards()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" title="Send to Back"><ArrowDownToLine size={14} /></button>
+                                    {/* Dynamic Toolset based on Object Type */}
+                                    {isTextSelected ? (
+                                        <>
+                                            <button className="flex justify-between items-center w-24 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer">
+                                                <span>{activeObj?.fontFamily || 'Inter'}</span> <ChevronDown size={12} className="opacity-50" />
+                                            </button>
+                                            <div className="w-px h-4 bg-black/10 mx-1" />
+                                            <div className="flex items-center">
+                                                <button className="p-1 hover:bg-black/5 rounded cursor-pointer" onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj?.fontSize || 24) - 2)}><Minus size={14} /></button>
+                                                <input type="text" value={activeObj?.fontSize || 24} readOnly className="w-8 text-center bg-transparent text-xs font-semibold outline-none pointer-events-none" />
+                                                <button className="p-1 hover:bg-black/5 rounded cursor-pointer" onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj?.fontSize || 24) + 2)}><Plus size={14} /></button>
+                                            </div>
+                                            <div className="w-px h-4 bg-black/10 mx-1" />
+                                            <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontWeight', 'bold', 'normal')} className={`p-1.5 hover:bg-black/5 rounded cursor-pointer ${activeObj?.fontWeight === 'bold' ? 'bg-black/10 text-black' : 'text-gray-500'}`}><Bold size={14} /></button>
+                                            <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontStyle', 'italic', 'normal')} className={`p-1.5 hover:bg-black/5 rounded cursor-pointer ${activeObj?.fontStyle === 'italic' ? 'bg-black/10 text-black' : 'text-gray-500'}`}><Italic size={14} /></button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer text-violet-600">
+                                                <Sparkles size={14} /> AI Remove BG
+                                            </button>
+                                            <div className="w-px h-4 bg-black/10 mx-1" />
+                                            <button className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer">
+                                                <Crop size={14} /> Crop
+                                            </button>
+                                            <div className="w-px h-4 bg-black/10 mx-1" />
+                                            <button className="px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer flex items-center gap-1.5">
+                                                <Layers size={14} /> Opacity
+                                            </button>
+                                        </>
+                                    )}
 
+                                    {/* Global Tools (Always appear for any object) */}
+                                    <div className="w-px h-4 bg-black/10 mx-1" />
+                                    <button onClick={() => fabricRef.current?.copy().then(() => fabricRef.current?.paste())} className="p-1.5 text-gray-500 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors" title="Duplicate"><Copy size={14} /></button>
+                                    <button onClick={() => fabricRef.current?.deleteSelected()} className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded cursor-pointer transition-colors" title="Delete"><Trash2 size={14} /></button>
+
+                                    {/* Production Warnings (DPI) */}
                                     {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
                                         <>
-                                            <div className="w-px h-4 bg-white/10 mx-1" />
-                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-[10px] font-semibold border border-red-500/30">
-                                                <AlertTriangle size={10} className="animate-pulse" /> DPI
+                                            <div className="w-px h-4 bg-black/10 mx-1" />
+                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold border border-red-200 uppercase tracking-widest shadow-sm">
+                                                <AlertTriangle size={10} className="animate-pulse" /> Warning
                                             </div>
                                         </>
                                     )}
@@ -912,7 +945,12 @@ export default function CanvasApp() {
                         </div>
                         <div className="p-5 border-t border-white/5 flex justify-end gap-3">
                             <button onClick={() => setIsReviewOpen(false)} className="px-5 py-2 text-white/60 font-medium hover:bg-white/10 rounded-lg transition-colors cursor-pointer">Back</button>
-                            <button className="px-5 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-500 transition-colors flex items-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"><ShoppingCart size={14} /> Confirm</button>
+                            <button
+                                disabled={!finalPayload.is_orderable}
+                                className={`px-5 py-2 bg-violet-600 text-white font-semibold rounded-lg flex items-center gap-2 shadow-lg shadow-violet-500/25 ${finalPayload.is_orderable ? 'hover:bg-violet-500 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <ShoppingCart size={14} /> Confirm
+                            </button>
                         </div>
                     </div>
                 </div>
