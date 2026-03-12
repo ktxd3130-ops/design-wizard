@@ -15,8 +15,9 @@ export interface TemplateCategory {
     items: ProductTemplate[];
 }
 
-// Helper to generate IDs
-const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
+// Deterministic ID generator — stable across page loads
+let idCounter = 0;
+const generateId = (prefix: string) => `${prefix}_${++idCounter}`;
 
 export const HC_BRANDS_CATALOG: TemplateCategory[] = [
     {

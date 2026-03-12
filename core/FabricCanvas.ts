@@ -4,12 +4,15 @@ import { useDesignStore } from './storage';
 import { DPICalculator } from './ProductionUtils';
 import { MockAIService } from './services/MockAI';
 import { PlaceholderService } from './services/PlaceholderService';
+import { SnappingEngine, HistoryManager, DrawingMode } from './canvas';
 
 export class FabricCanvas {
     public canvas: fabric.Canvas;
 
-    private snappingDistance = 5;
-    private guideLines: fabric.Line[] = [];
+    // Extracted modules (composition)
+    private snappingEngine: SnappingEngine;
+    private historyManager: HistoryManager;
+    private drawingMode: DrawingMode;
 
     // Touch & Panning state
     private isSpacePan = false;
@@ -20,11 +23,6 @@ export class FabricCanvas {
     // Architect: Performance Loop State
     private syncPending = false;
     private rafId = 0;
-
-    // History (Undo/Redo)
-    private history: any[] = [];
-    private historyIndex = -1;
-    private isHistoryAction = false;
 
     // 1:1 Scale Dimension Tracking
     public baseWidth = 800;
@@ -49,10 +47,16 @@ export class FabricCanvas {
             preserveObjectStacking: true,
         });
 
-        // Architect: History listeners
-        this.canvas.on('object:added', () => this.saveHistory());
-        this.canvas.on('object:modified', () => this.saveHistory());
-        this.canvas.on('object:removed', () => this.saveHistory());
+        // Initialise extracted modules
+        this.snappingEngine = new SnappingEngine(this.canvas);
+        this.historyManager = new HistoryManager(this.canvas);
+        this.drawingMode = new DrawingMode(this.canvas);
+
+        // Wire drawing-mode sync callback
+        this.drawingMode.onPathCreated(() => this.syncToStore());
+
+        // Architect: History listeners (delegated to HistoryManager)
+        this.historyManager.attach();
 
         // Architect: Integrate types.ts into object:moving and object:scaling
         this.canvas.on('object:moving', this.handleObjectModification.bind(this));
@@ -126,7 +130,7 @@ export class FabricCanvas {
         this.canvas.on('mouse:up', () => {
             this.isDragging = false;
             this.canvas.selection = true;
-            this.clearGuideLines();
+            this.snappingEngine.clearGuides();
             this.canvas.renderAll();
         });
 
@@ -334,30 +338,14 @@ export class FabricCanvas {
         }
     }
 
-    private clearGuideLines() {
-        this.guideLines.forEach(line => this.canvas.remove(line));
-        this.guideLines = [];
-    }
-
-    private drawGuideLine(coords: [number, number, number, number]) {
-        const line = new fabric.Line(coords, {
-            stroke: '#ec4899', // pink-500
-            strokeWidth: 1,
-            selectable: false,
-            evented: false,
-            strokeDashArray: [5, 5],
-            opacity: 0.8
-        });
-        this.canvas.add(line);
-        this.guideLines.push(line);
-    }
+    // Guide line management delegated to SnappingEngine
 
     private handleObjectModification(e: any) {
         const target = e.target;
         if (!target) return;
 
         if (e.e && e.e.type === 'mousemove') {
-            this.handleSnapping(target);
+            this.snappingEngine.handleSnapping(target);
         }
 
         // Architect QA: Eliminate sub-pixel blur post-modification
@@ -421,45 +409,17 @@ export class FabricCanvas {
     }
 
     private saveHistory() {
-        if (this.isHistoryAction) return;
-
-        const json = (this.canvas as any).toJSON(['id', 'name', 'locked']);
-
-        // If we are rewound and saving, truncate future history
-        if (this.historyIndex < this.history.length - 1) {
-            this.history = this.history.slice(0, this.historyIndex + 1);
-        }
-
-        this.history.push(json);
-        this.historyIndex++;
-
-        // Add a gentle cap to history to avoid blowing up memory with 50MB blobs
-        if (this.history.length > 50) {
-            this.history.shift();
-            this.historyIndex--;
-        }
+        this.historyManager.save();
     }
 
     public async undo() {
-        if (this.historyIndex > 0) {
-            this.isHistoryAction = true;
-            this.historyIndex--;
-            await this.canvas.loadFromJSON(this.history[this.historyIndex]);
-            this.canvas.renderAll();
-            this.syncToStore();
-            this.isHistoryAction = false;
-        }
+        const restored = await this.historyManager.undo();
+        if (restored) this.syncToStore();
     }
 
     public async redo() {
-        if (this.historyIndex < this.history.length - 1) {
-            this.isHistoryAction = true;
-            this.historyIndex++;
-            await this.canvas.loadFromJSON(this.history[this.historyIndex]);
-            this.canvas.renderAll();
-            this.syncToStore();
-            this.isHistoryAction = false;
-        }
+        const restored = await this.historyManager.redo();
+        if (restored) this.syncToStore();
     }
 
     public toggleLock(id: string) {
@@ -489,64 +449,7 @@ export class FabricCanvas {
         this.syncToStore();
     }
 
-    private snapRafId = 0;
-
-    private handleSnapping(target: any) {
-        if (this.snapRafId) cancelAnimationFrame(this.snapRafId);
-
-        this.snapRafId = requestAnimationFrame(() => {
-            this.clearGuideLines();
-
-            const canvasWidth = this.canvas.getWidth();
-            const canvasHeight = this.canvas.getHeight();
-            // Optional: fallback to 0 if zustand isn't ready
-            const safeZone = useDesignStore.getState().state?.safeZoneMargin || 25;
-            const centerX = canvasWidth / 2;
-            const centerY = canvasHeight / 2;
-
-            const objWidth = target.getScaledWidth();
-            const objHeight = target.getScaledHeight();
-            const objCenterX = target.left + objWidth / 2;
-            const objCenterY = target.top + objHeight / 2;
-
-            let snapped = false;
-
-            // X-Axis Magnetic Snapping
-            if (Math.abs(objCenterX - centerX) < this.snappingDistance) {
-                target.set('left', centerX - objWidth / 2);
-                this.drawGuideLine([centerX, 0, centerX, canvasHeight]);
-                snapped = true;
-            } else if (Math.abs(target.left - safeZone) < this.snappingDistance) {
-                target.set('left', safeZone);
-                this.drawGuideLine([safeZone, 0, safeZone, canvasHeight]);
-                snapped = true;
-            } else if (Math.abs((target.left + objWidth) - (canvasWidth - safeZone)) < this.snappingDistance) {
-                target.set('left', canvasWidth - safeZone - objWidth);
-                this.drawGuideLine([canvasWidth - safeZone, 0, canvasWidth - safeZone, canvasHeight]);
-                snapped = true;
-            }
-
-            // Y-Axis Magnetic Snapping
-            if (Math.abs(objCenterY - centerY) < this.snappingDistance) {
-                target.set('top', centerY - objHeight / 2);
-                this.drawGuideLine([0, centerY, canvasWidth, centerY]);
-                snapped = true;
-            } else if (Math.abs(target.top - safeZone) < this.snappingDistance) {
-                target.set('top', safeZone);
-                this.drawGuideLine([0, safeZone, canvasWidth, safeZone]);
-                snapped = true;
-            } else if (Math.abs((target.top + objHeight) - (canvasHeight - safeZone)) < this.snappingDistance) {
-                target.set('top', canvasHeight - safeZone - objHeight);
-                this.drawGuideLine([0, canvasHeight - safeZone, canvasWidth, canvasHeight - safeZone]);
-                snapped = true;
-            }
-
-            if (snapped) {
-                target.setCoords(); // Crucial for Fabric to understand the manual offset
-                this.canvas.requestRenderAll();
-            }
-        });
-    }
+    // Snapping logic delegated to SnappingEngine
 
     private generateThumbnail(): string {
         // Generate a low-res data-URL for the Integrator
@@ -857,26 +760,7 @@ export class FabricCanvas {
     }
 
     public toggleDrawingMode(isDrawing: boolean, settings: { type: string, color: string, width: number }) {
-        this.canvas.isDrawingMode = isDrawing;
-        if (!isDrawing) return;
-
-        // Configure brush based on type
-        if (settings.type === 'pen' || settings.type === 'highlighter') {
-            this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-        } else if (settings.type === 'marker') {
-            this.canvas.freeDrawingBrush = new fabric.CircleBrush(this.canvas);
-        }
-
-        if (this.canvas.freeDrawingBrush) {
-            this.canvas.freeDrawingBrush.color = settings.color;
-            this.canvas.freeDrawingBrush.width = settings.width;
-        }
-
-        // Ensure paths created have IDs so they can be deleted
-        this.canvas.on('path:created', (opt: any) => {
-            opt.path.set({ id: `path_${Math.random().toString(36).substr(2, 9)}` });
-            this.syncToStore();
-        });
+        this.drawingMode.toggle(isDrawing, settings);
     }
 
     public updateActiveObjectProperty(key: string, value: any) {

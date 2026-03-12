@@ -53,9 +53,10 @@ export function serializeForOpenMage(): OpenMagePayload {
         design_state: {
             ...state,
             objects: hydratedObjects,
-            sessionAssets: [], // OpenMage doesn't need pending session assets, only the final object S3 paths
-            activeObjectId: undefined // Cleanup
-        } as unknown as DesignState,
+            sessionAssets: [],
+            activeObjectId: null,
+            activeObjectBox: null,
+        },
         is_orderable: OrderValidationService.validate(state)
     };
 }

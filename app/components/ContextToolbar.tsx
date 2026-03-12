@@ -1,0 +1,179 @@
+'use client';
+
+import React from 'react';
+import {
+    AlertTriangle, Loader2,
+    Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
+    Minus, Plus, Sparkles, Layers, ChevronDown, Crop
+} from 'lucide-react';
+import { FabricCanvas } from '@/core/FabricCanvas';
+import { BrandConfig } from '@/core/config';
+import { DesignState } from '@/core/types';
+
+export interface ContextToolbarProps {
+    fabricRef: React.RefObject<FabricCanvas | null>;
+    designState: DesignState;
+    brandConfig: BrandConfig | null;
+    isAdmin: boolean;
+    isRemovingBg: boolean;
+    onRemoveBg: () => void;
+}
+
+export default function ContextToolbar({
+    fabricRef,
+    designState,
+    brandConfig,
+    isAdmin,
+    isRemovingBg,
+    onRemoveBg,
+}: ContextToolbarProps) {
+    const activeObj = designState.objects.find(o => o.id === designState.activeObjectId) as any;
+    const isTextSelected = activeObj && ['textbox', 'text', 'i-text'].includes(activeObj.type);
+    const isShapeSelected = activeObj && ['rect', 'circle', 'triangle', 'polygon', 'path'].includes(activeObj.type);
+    const isImageSelected = activeObj && activeObj.type === 'image';
+
+    return (
+        <div className="h-[48px] bg-[#2a2a3d] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+            {isTextSelected ? (
+                <>
+                    {/* Font family restricted by Brand Kit */}
+                    <div className="relative group/font">
+                        <button className="flex items-center justify-between gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-sm text-white/90 min-w-[140px] transition-colors cursor-pointer" aria-label="Font Family" title="Font Family">
+                            <span>{activeObj.fontFamily || 'Sans Serif'}</span> <ChevronDown size={12} className="text-white/40 group-hover/font:rotate-180 transition-transform" />
+                        </button>
+                        <div className="absolute top-full left-0 mt-1 w-[180px] bg-[#2a2a3d] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/font:opacity-100 group-hover/font:visible transition-all z-50 overflow-hidden flex flex-col">
+                            {(!isAdmin && brandConfig?.typography.fonts) ? (
+                                brandConfig.typography.fonts.map(font => (
+                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors font-medium">
+                                        {font} <span className="text-[10px] text-violet-400 ml-1 rounded-sm bg-violet-400/10 px-1 py-0.5">Brand</span>
+                                    </button>
+                                ))
+                            ) : (
+                                ['Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'].map(font => (
+                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                                        {font}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                    {/* Font size */}
+                    <div className="flex items-center bg-white/10 rounded-lg overflow-hidden" aria-label="Font Size">
+                        <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', Math.max(8, (activeObj.fontSize || 24) - 2))} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors" aria-label="Decrease Font Size" title="Decrease Font Size"><Minus size={14} /></button>
+                        <span className="text-sm text-white/90 px-2 min-w-[32px] text-center">{Math.round(activeObj.fontSize || 24)}</span>
+                        <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj.fontSize || 24) + 2)} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors" aria-label="Increase Font Size" title="Increase Font Size"><Plus size={14} /></button>
+                    </div>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* Color */}
+                    <label className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Text Color" aria-label="Text Color">
+                        <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.fill as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('fill', e.target.value)} />
+                    </label>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* B I U */}
+                    <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontWeight', 'bold', 'normal')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.fontWeight === 'bold' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Bold" title="Bold"><Bold size={16} /></button>
+                    <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontStyle', 'italic', 'normal')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.fontStyle === 'italic' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Italic" title="Italic"><Italic size={16} /></button>
+                    <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('underline', true, false)} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.underline ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Underline" title="Underline"><Underline size={16} /></button>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* Alignment */}
+                    <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'left')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'left' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Left" title="Align Left"><AlignLeft size={16} /></button>
+                    <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'center')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'center' || !activeObj.textAlign ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Center" title="Align Center"><AlignCenter size={16} /></button>
+                    <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'right')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'right' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Right" title="Align Right"><AlignRight size={16} /></button>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* Text Effects: Stroke & Shadow */}
+                    <div className="flex items-center gap-2 group relative">
+                        <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">Effects</button>
+                        <div className="absolute top-full left-0 mt-2 p-3 w-64 bg-[#2a2a3d] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                            {/* Stroke */}
+                            <div className="mb-4">
+                                <div className="text-xs font-semibold text-white/70 mb-2">Outline (Stroke)</div>
+                                <div className="flex items-center gap-3">
+                                    <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.stroke as string) || 'transparent' }}>
+                                        <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0" value={(activeObj.stroke as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('stroke', e.target.value)} />
+                                    </label>
+                                    <input type="range" className="flex-1 accent-violet-500 cursor-pointer" min="0" max="10" step="0.5" value={activeObj.strokeWidth || 0} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('strokeWidth', parseFloat(e.target.value))} />
+                                    <span className="text-xs text-white/50 w-6">{activeObj.strokeWidth || 0}</span>
+                                </div>
+                            </div>
+                            {/* Shadow */}
+                            <div>
+                                <div className="text-xs font-semibold text-white/70 mb-2">Drop Shadow</div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: activeObj.shadow?.color || 'transparent' }}>
+                                        <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0" value={activeObj.shadow?.color || '#000000'} onChange={(e) => {
+                                            const currentShadow = activeObj.shadow || { blur: 10, offsetX: 5, offsetY: 5 };
+                                            fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, color: e.target.value });
+                                        }} />
+                                    </label>
+                                    <span className="text-[10px] text-white/50">Color</span>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-white/50 w-10">Blur</span>
+                                        <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="0" max="50" value={activeObj.shadow?.blur || 0} onChange={(e) => {
+                                            const currentShadow = activeObj.shadow || { color: '#000000', offsetX: 5, offsetY: 5 };
+                                            fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, blur: parseInt(e.target.value) });
+                                        }} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-white/50 w-10">Offset X</span>
+                                        <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="-50" max="50" value={activeObj.shadow?.offsetX || 0} onChange={(e) => {
+                                            const currentShadow = activeObj.shadow || { color: '#000000', blur: 10, offsetY: 5 };
+                                            fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, offsetX: parseInt(e.target.value) });
+                                        }} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-white/50 w-10">Offset Y</span>
+                                        <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="-50" max="50" value={activeObj.shadow?.offsetY || 0} onChange={(e) => {
+                                            const currentShadow = activeObj.shadow || { color: '#000000', blur: 10, offsetX: 5 };
+                                            fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, offsetY: parseInt(e.target.value) });
+                                        }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            ) : isShapeSelected ? (
+                <>
+                    <label className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Shape Fill Color" aria-label="Shape Fill Color">
+                        <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.fill as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('fill', e.target.value)} />
+                    </label>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/50">Stroke</span>
+                        <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.stroke as string) || 'transparent' }} title="Stroke Color" aria-label="Stroke Color">
+                            <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.stroke as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('stroke', e.target.value)} />
+                        </label>
+                        <input type="range" className="w-16 accent-white cursor-pointer" min="0" max="20" value={activeObj.strokeWidth || 0} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('strokeWidth', parseInt(e.target.value))} aria-label="Stroke Width" title="Stroke Width" />
+                    </div>
+                </>
+            ) : isImageSelected ? (
+                <>
+                    <button onClick={onRemoveBg} disabled={isRemovingBg} className="flex items-center gap-1.5 text-sm bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 px-3 py-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-50">
+                        {isRemovingBg ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Remove BG
+                    </button>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                        <Crop size={14} /> Crop
+                    </button>
+                    <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                        <Layers size={14} /> Opacity
+                    </button>
+                </>
+            ) : activeObj ? (
+                <span className="text-xs text-white/70">Element selected</span>
+            ) : (
+                <span className="text-xs text-white/30 hidden md:inline">Select an element to edit its properties</span>
+            )}
+
+            {/* Right side: warnings */}
+            <div className="ml-auto flex items-center gap-2">
+                {designState.warnings.length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-red-500/20 text-red-300 px-3 py-1 rounded-lg text-xs font-medium border border-red-500/30">
+                        <AlertTriangle size={12} /> {designState.warnings.length} Warning{designState.warnings.length > 1 ? 's' : ''}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
