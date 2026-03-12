@@ -115,13 +115,20 @@ export default function CanvasApp() {
     const handleAddText = (textStr: string = 'Your text here', options: { fontSize?: number, fontWeight?: string | number } = {}) => {
         fabricRef.current?.addText(textStr, options);
     };
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
+        let file: File | undefined;
+        if ('dataTransfer' in e) {
+            file = e.dataTransfer.files?.[0];
+        } else {
+            file = (e.target as HTMLInputElement).files?.[0];
+        }
+
+        if (!file || !file.type.startsWith('image/')) return;
+
         const proxyUrl = URL.createObjectURL(file);
         const assetId = crypto.randomUUID();
         const newAsset: SessionAsset = { id: assetId, file, proxyUrl, status: 'uploading', progress: 0 };
-        useDesignStore.getState().syncCanvasState({ sessionAssets: [...designState.sessionAssets, newAsset] });
+        useDesignStore.getState().syncCanvasState({ sessionAssets: [...useDesignStore.getState().state.sessionAssets, newAsset] });
         if (fabricRef.current) fabricRef.current.addImage(proxyUrl, assetId);
         let progress = 0;
         const interval = setInterval(() => {
@@ -138,7 +145,10 @@ export default function CanvasApp() {
                 useDesignStore.getState().syncCanvasState({ sessionAssets: updatedAssets });
             }
         }, 500);
-        e.target.value = '';
+
+        if ('target' in e && e.target instanceof HTMLInputElement) {
+            e.target.value = '';
+        }
     };
     const handleReviewClick = () => { setFinalPayload(serializeForOpenMage()); setIsReviewOpen(true); };
     const togglePanel = (panel: SidebarPanel) => {
@@ -439,7 +449,59 @@ export default function CanvasApp() {
                         <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'center')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'center' || !activeObj.textAlign ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Center" title="Align Center"><AlignCenter size={16} /></button>
                         <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'right')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'right' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Right" title="Align Right"><AlignRight size={16} /></button>
                         <div className="w-px h-6 bg-white/10 mx-1" />
-                        <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">Effects</button>
+                        {/* Text Effects: Stroke & Shadow */}
+                        <div className="flex items-center gap-2 group relative">
+                            <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">Effects</button>
+                            <div className="absolute top-full left-0 mt-2 p-3 w-64 bg-[#2a2a3d] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                {/* Stroke */}
+                                <div className="mb-4">
+                                    <div className="text-xs font-semibold text-white/70 mb-2">Outline (Stroke)</div>
+                                    <div className="flex items-center gap-3">
+                                        <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.stroke as string) || 'transparent' }}>
+                                            <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0" value={(activeObj.stroke as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('stroke', e.target.value)} />
+                                        </label>
+                                        <input type="range" className="flex-1 accent-violet-500 cursor-pointer" min="0" max="10" step="0.5" value={activeObj.strokeWidth || 0} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('strokeWidth', parseFloat(e.target.value))} />
+                                        <span className="text-xs text-white/50 w-6">{activeObj.strokeWidth || 0}</span>
+                                    </div>
+                                </div>
+                                {/* Shadow */}
+                                <div>
+                                    <div className="text-xs font-semibold text-white/70 mb-2">Drop Shadow</div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: activeObj.shadow?.color || 'transparent' }}>
+                                            <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0" value={activeObj.shadow?.color || '#000000'} onChange={(e) => {
+                                                const currentShadow = activeObj.shadow || { blur: 10, offsetX: 5, offsetY: 5 };
+                                                fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, color: e.target.value });
+                                            }} />
+                                        </label>
+                                        <span className="text-[10px] text-white/50">Color</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-white/50 w-10">Blur</span>
+                                            <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="0" max="50" value={activeObj.shadow?.blur || 0} onChange={(e) => {
+                                                const currentShadow = activeObj.shadow || { color: '#000000', offsetX: 5, offsetY: 5 };
+                                                fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, blur: parseInt(e.target.value) });
+                                            }} />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-white/50 w-10">Offset X</span>
+                                            <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="-50" max="50" value={activeObj.shadow?.offsetX || 0} onChange={(e) => {
+                                                const currentShadow = activeObj.shadow || { color: '#000000', blur: 10, offsetY: 5 };
+                                                fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, offsetX: parseInt(e.target.value) });
+                                            }} />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-white/50 w-10">Offset Y</span>
+                                            <input type="range" className="flex-1 accent-violet-500 cursor-pointer h-1" min="-50" max="50" value={activeObj.shadow?.offsetY || 0} onChange={(e) => {
+                                                const currentShadow = activeObj.shadow || { color: '#000000', blur: 10, offsetX: 5 };
+                                                fabricRef.current?.updateActiveObjectProperty('shadow', { ...currentShadow, offsetY: parseInt(e.target.value) });
+                                            }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </>
                 ) : isShapeSelected ? (
                     <>
@@ -1018,6 +1080,15 @@ export default function CanvasApp() {
                                 fabricRef.current.canvas.discardActiveObject();
                                 fabricRef.current.canvas.requestRenderAll();
                             }
+                        }}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleFileUpload(e);
                         }}
                     >
                         <div className="relative bg-white rounded shadow-2xl shadow-black/40 inline-flex shrink-0">

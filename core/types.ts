@@ -43,6 +43,9 @@ export interface TextObject extends BaseFabricObject {
   fill: string;
   fontWeight: string | number;
   textAlign: 'left' | 'center' | 'right' | 'justify';
+  stroke?: string;
+  strokeWidth?: number;
+  shadow?: { color: string, blur: number, offsetX: number, offsetY: number } | null;
   /** Architect: Shrink-to-fit behavior */
   autoSize?: boolean;
   /** Architect: Font Loading Guard */
