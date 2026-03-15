@@ -100,11 +100,11 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-5 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0 flex items-center justify-between">
+            <div className="p-6 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-[var(--ui-90)]">Layers</h3>
                 <span className="text-[10px] text-[var(--ui-40)]">{layers.length} layers</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
                 {layers.map((layer: any, idx) => {
                     const isActive = layer.id === designState.activeObjectId;
                     const isHidden = layer.opacity === 0;
@@ -113,7 +113,7 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
                         <div
                             key={layer.id}
                             onClick={() => handleSelectLayer(layer.id)}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all cursor-pointer group ${
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all cursor-pointer group ${
                                 isActive
                                     ? 'bg-violet-500/15 border-violet-500/30'
                                     : 'bg-white/[0.02] border-transparent hover:bg-[var(--ui-5)] hover:border-[var(--ui-5)]'

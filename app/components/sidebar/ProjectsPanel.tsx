@@ -5,19 +5,19 @@ import { Search, FolderOpen } from 'lucide-react';
 export function ProjectsPanel() {
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-5 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0">
+            <div className="p-6 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0">
                 <div className="relative">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 mt-[-1px] text-[var(--ui-30)]" />
                     <input placeholder="Search your projects" className="w-full bg-[var(--ui-10)] border border-[var(--ui-10)] rounded-xl pl-11 pr-4 py-3 text-sm text-[var(--ui-80)] placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all font-medium" />
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 space-y-7">
+            <div className="flex-1 overflow-y-auto p-6 space-y-10">
                 {/* Folders */}
-                <div className="space-y-3">
+                <div className="space-y-5">
                     <p className="text-[11px] font-bold tracking-wider uppercase text-[var(--ui-50)]">Folders</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                         {['Uploads', 'Purchased', 'Starred', 'Trash'].map((folder) => (
-                            <button key={folder} className="bg-[var(--ui-5)] hover:bg-[var(--ui-10)] border border-[var(--ui-5)] rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all group">
+                            <button key={folder} className="bg-[var(--ui-5)] hover:bg-[var(--ui-10)] border border-[var(--ui-5)] rounded-xl p-5 flex flex-col items-center justify-center gap-2 transition-all group">
                                 <FolderOpen size={24} className="text-[var(--ui-40)] group-hover:text-violet-400" />
                                 <span className="text-[11px] font-semibold text-[var(--ui-80)] group-hover:text-[var(--ui-100)]">{folder}</span>
                             </button>
@@ -26,9 +26,9 @@ export function ProjectsPanel() {
                 </div>
 
                 {/* Recent Designs */}
-                <div className="space-y-3">
+                <div className="space-y-5">
                     <p className="text-[11px] font-bold tracking-wider uppercase text-[var(--ui-50)]">Recent Designs</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="group cursor-pointer">
                                 <div className="aspect-video bg-[var(--ui-5)] border border-[var(--ui-5)] rounded-xl mb-2 overflow-hidden relative">

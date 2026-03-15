@@ -411,8 +411,8 @@ export default function CanvasApp() {
                 </nav>
 
                 {/* Side Panel */}
-                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[var(--surface-2)] border-r border-[var(--ui-5)] shrink-0 overflow-hidden`}>
-                    <aside className="w-[300px] flex flex-col shrink-0 overflow-hidden absolute inset-y-0 left-0">
+                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[340px]' : 'w-0'} bg-[var(--surface-2)] border-r border-[var(--ui-5)] shrink-0 overflow-hidden`}>
+                    <aside className="w-[340px] flex flex-col shrink-0 overflow-hidden absolute inset-y-0 left-0">
                         {activePanel === 'text' && <TextPanel fabricRef={fabricRef} />}
                         {activePanel === 'uploads' && <UploadsPanel fabricRef={fabricRef} designState={designState} onFileUpload={handleFileUpload} />}
                         {activePanel === 'elements' && <ElementsPanel fabricRef={fabricRef} brandConfig={brandConfig} />}

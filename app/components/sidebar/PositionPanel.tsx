@@ -17,7 +17,7 @@ interface PositionPanelProps {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--ui-60)] mb-3">
+    <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--ui-60)] mb-4">
       {children}
     </h3>
   );
@@ -85,7 +85,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
   if (!selectedObject) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-[var(--ui-5)]">
+        <div className="p-6 border-b border-[var(--ui-5)]">
           <h2 className="text-sm font-semibold text-[var(--ui-90)]">Position</h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
@@ -103,35 +103,35 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
-      <div className="p-5 border-b border-[var(--ui-5)]">
+      <div className="p-6 border-b border-[var(--ui-5)]">
         <h2 className="text-sm font-semibold text-[var(--ui-90)]">Position</h2>
       </div>
 
       {/* Arrange */}
-      <div className="p-5 border-b border-[var(--ui-5)]">
+      <div className="p-6 border-b border-[var(--ui-5)]">
         <SectionHeader>Arrange</SectionHeader>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => fabricRef.current?.bringForward()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
           >
             <ArrowUp size={14} /> Forward
           </button>
           <button
             onClick={() => fabricRef.current?.sendBackwards()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
           >
             <ArrowDown size={14} /> Backward
           </button>
           <button
             onClick={() => fabricRef.current?.bringToFront()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
           >
             <ChevronsUp size={14} /> To Front
           </button>
           <button
             onClick={() => fabricRef.current?.sendToBack()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-70)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
           >
             <ChevronsDown size={14} /> To Back
           </button>
@@ -139,9 +139,9 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
       </div>
 
       {/* Align to page */}
-      <div className="p-5 border-b border-[var(--ui-5)]">
+      <div className="p-6 border-b border-[var(--ui-5)]">
         <SectionHeader>Align to page</SectionHeader>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4">
           <button
             onClick={() => fabricRef.current?.alignObjects('top')}
             className="flex flex-col items-center gap-1 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-60)] hover:text-[var(--ui-100)] py-3 rounded-xl transition-colors"
@@ -194,7 +194,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
       </div>
 
       {/* Advanced: Dimensions & Position */}
-      <div className="p-5 border-b border-[var(--ui-5)]">
+      <div className="p-6 border-b border-[var(--ui-5)]">
         <SectionHeader>Advanced</SectionHeader>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <NumberInput
@@ -232,19 +232,19 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
       </div>
 
       {/* Flip */}
-      <div className="p-5 border-b border-[var(--ui-5)]">
+      <div className="p-6 border-b border-[var(--ui-5)]">
         <SectionHeader>Flip</SectionHeader>
         <div className="flex gap-2">
           <button
             onClick={() => fabricRef.current?.flipHorizontal()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-60)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-60)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
             title="Flip Horizontal"
           >
             <FlipHorizontal2 size={14} /> Horizontal
           </button>
           <button
             onClick={() => fabricRef.current?.flipVertical()}
-            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-60)] hover:text-[var(--ui-100)] text-xs px-4 py-3 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] text-[var(--ui-60)] hover:text-[var(--ui-100)] text-xs px-4 py-4 rounded-xl transition-colors"
             title="Flip Vertical"
           >
             <FlipVertical2 size={14} /> Vertical

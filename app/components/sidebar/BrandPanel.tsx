@@ -13,7 +13,7 @@ interface BrandPanelProps {
 
 export function BrandPanel({ fabricRef, brandConfig, setBrandConfig, isAdmin }: BrandPanelProps) {
     return (
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
             <p className="text-[11px] text-[var(--ui-30)] uppercase tracking-wider font-semibold">Brand Theme</p>
             {[
                 { name: 'StickyLife', brand: 'stickylife', color: '#3b82f6' },

@@ -12,7 +12,7 @@ interface UploadsPanelProps {
 
 export function UploadsPanel({ fabricRef, designState, onFileUpload }: UploadsPanelProps) {
     return (
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
             <div className="relative">
                 <button className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--ui-100)] py-3 rounded-xl font-semibold text-sm transition-colors cursor-pointer relative overflow-hidden shadow-lg shadow-violet-500/20">
                     <UploadCloud size={18} /> Upload files
@@ -26,7 +26,7 @@ export function UploadsPanel({ fabricRef, designState, onFileUpload }: UploadsPa
                     <p className="text-xs text-[var(--ui-20)] mt-1">Drag files here or click Upload</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                     {designState.sessionAssets.map(asset => (
                         <div key={asset.id} onClick={() => fabricRef.current?.addImage(asset.proxyUrl, crypto.randomUUID())} className="relative group aspect-square bg-[var(--ui-5)] rounded-xl overflow-hidden border border-[var(--ui-5)] hover:border-violet-500/50 transition-all cursor-pointer">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
