@@ -63,7 +63,7 @@ export default function TopNav({
     }, [designState.objects, designState.backgroundColor]);
 
     return (
-        <header className="h-[52px] bg-[#1e1e2e] border-b border-white/10 flex items-center px-4 gap-3 shrink-0 z-20">
+        <header className="h-[52px] bg-[#1e1e2e] border-b border-white/10 flex items-center px-5 gap-4 shrink-0 z-20">
             {/* Left cluster */}
             <div className="flex items-center gap-2 relative">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
@@ -106,9 +106,9 @@ export default function TopNav({
             </div>
 
             {/* Right actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
                 {/* Collaborator Avatars */}
-                <div className="flex items-center mr-2">
+                <div className="flex items-center mr-3">
                     <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold ring-2 ring-[#1e1e2e] z-10" aria-label="Kendall Dale" title="Kendall Dale">K</div>
                     <button className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white ring-2 ring-[#1e1e2e] z-0 transition-colors ml-1 cursor-pointer" aria-label="Share Design" title="Share Design">
                         <Plus size={14} />
@@ -128,7 +128,7 @@ export default function TopNav({
                             const a = document.createElement('a'); a.href = url;
                             a.download = `template_${designState.design_id}.json`; a.click();
                         }}
-                        className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors ml-2"
+                        className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors ml-1"
                     >
                         <Shield size={12} /> Export
                     </button>

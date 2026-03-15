@@ -141,10 +141,10 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
       {/* Align to page */}
       <div className="p-4 border-b border-white/5">
         <SectionHeader>Align to page</SectionHeader>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => fabricRef.current?.alignObjects('top')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Top"
           >
             <AlignVerticalJustifyStart size={16} />
@@ -152,7 +152,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
           </button>
           <button
             onClick={() => fabricRef.current?.alignObjects('left')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Left"
           >
             <AlignHorizontalJustifyStart size={16} />
@@ -160,7 +160,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
           </button>
           <button
             onClick={() => fabricRef.current?.alignObjects('middle')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Middle"
           >
             <AlignVerticalJustifyCenter size={16} />
@@ -168,7 +168,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
           </button>
           <button
             onClick={() => fabricRef.current?.alignObjects('center')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Center"
           >
             <AlignHorizontalJustifyCenter size={16} />
@@ -176,7 +176,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
           </button>
           <button
             onClick={() => fabricRef.current?.alignObjects('bottom')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Bottom"
           >
             <AlignVerticalJustifyEnd size={16} />
@@ -184,7 +184,7 @@ export function PositionPanel({ fabricRef, designState }: PositionPanelProps) {
           </button>
           <button
             onClick={() => fabricRef.current?.alignObjects('right')}
-            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-2.5 rounded-lg transition-colors"
+            className="flex flex-col items-center gap-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white py-3 rounded-lg transition-colors"
             title="Align Right"
           >
             <AlignHorizontalJustifyEnd size={16} />

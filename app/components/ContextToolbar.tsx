@@ -39,7 +39,7 @@ export default function ContextToolbar({
     const isImageSelected = activeObj && activeObj.type === 'image';
 
     return (
-        <div className="h-[48px] bg-[#2a2a3d] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+        <div className="h-[48px] bg-[#2a2a3d] border-b border-white/5 flex items-center px-5 gap-2.5 shrink-0">
             {isTextSelected ? (
                 <>
                     {/* Font family restricted by Brand Kit */}
@@ -69,22 +69,22 @@ export default function ContextToolbar({
                         <span className="text-sm text-white/90 px-2 min-w-[32px] text-center">{Math.round(activeObj.fontSize || 24)}</span>
                         <button onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj.fontSize || 24) + 2)} className="px-2 py-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors" aria-label="Increase Font Size" title="Increase Font Size"><Plus size={14} /></button>
                     </div>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Color */}
                     <label className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Text Color" aria-label="Text Color">
                         <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.fill as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('fill', e.target.value)} />
                     </label>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* B I U */}
                     <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontWeight', 'bold', 'normal')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.fontWeight === 'bold' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Bold" title="Bold"><Bold size={16} /></button>
                     <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontStyle', 'italic', 'normal')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.fontStyle === 'italic' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Italic" title="Italic"><Italic size={16} /></button>
                     <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('underline', true, false)} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.underline ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Underline" title="Underline"><Underline size={16} /></button>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Alignment */}
                     <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'left')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'left' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Left" title="Align Left"><AlignLeft size={16} /></button>
                     <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'center')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'center' || !activeObj.textAlign ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Center" title="Align Center"><AlignCenter size={16} /></button>
                     <button onClick={() => fabricRef.current?.updateActiveObjectProperty('textAlign', 'right')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeObj.textAlign === 'right' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`} aria-label="Align Right" title="Align Right"><AlignRight size={16} /></button>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Text Effects: Stroke & Shadow */}
                     <div className="flex items-center gap-2 group relative">
                         <button className="text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">Effects</button>
@@ -144,7 +144,7 @@ export default function ContextToolbar({
                     <label className="w-7 h-7 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.fill as string) || '#000' }} title="Shape Fill Color" aria-label="Shape Fill Color">
                         <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer inset-0 default-color-picker" value={(activeObj.fill as string) || '#000000'} onChange={(e) => fabricRef.current?.updateActiveObjectProperty('fill', e.target.value)} />
                     </label>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-white/50">Stroke</span>
                         <label className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors cursor-pointer block relative overflow-hidden" style={{ backgroundColor: (activeObj.stroke as string) || 'transparent' }} title="Stroke Color" aria-label="Stroke Color">
@@ -158,7 +158,7 @@ export default function ContextToolbar({
                     <button onClick={onRemoveBg} disabled={isRemovingBg} className="flex items-center gap-1.5 text-sm bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 px-3 py-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-50">
                         {isRemovingBg ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Remove BG
                     </button>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Flip */}
                     <button onClick={() => fabricRef.current?.flipHorizontal()} className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer" title="Flip Horizontal">
                         <FlipHorizontal2 size={14} /> Flip
@@ -166,7 +166,7 @@ export default function ContextToolbar({
                     <button onClick={() => fabricRef.current?.flipVertical()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Flip Vertical">
                         <FlipVertical2 size={14} />
                     </button>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Opacity */}
                     <div className="flex items-center gap-2">
                         <Layers size={14} className="text-white/50" />
@@ -181,7 +181,7 @@ export default function ContextToolbar({
                         />
                         <span className="text-xs text-white/50 w-8">{Math.round((activeObj.opacity ?? 1) * 100)}%</span>
                     </div>
-                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <div className="w-px h-6 bg-white/10 mx-1.5" />
                     {/* Filters dropdown */}
                     <div className="relative group/filters">
                         <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
@@ -239,7 +239,7 @@ export default function ContextToolbar({
             <div className="ml-auto flex items-center gap-2">
                 {activeObj && (
                     <>
-                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        <div className="w-px h-6 bg-white/10 mx-1.5" />
                         <button
                             onClick={() => setActivePanel(activePanel === 'position' ? null : 'position')}
                             className={`text-sm px-3 py-1 rounded-full transition-colors cursor-pointer ${activePanel === 'position' ? 'bg-violet-600/30 text-violet-300 border border-violet-500/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`}

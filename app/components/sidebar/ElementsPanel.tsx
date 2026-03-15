@@ -12,7 +12,7 @@ interface ElementsPanelProps {
 export function ElementsPanel({ fabricRef, brandConfig }: ElementsPanelProps) {
     return (
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            <div className="relative sticky top-0 z-10 bg-[#252627] pb-2">
+            <div className="relative sticky top-0 z-10 bg-[#252536] pb-2">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 mt-[-4px] text-white/30" />
                 <input placeholder="Search elements" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all" />
             </div>

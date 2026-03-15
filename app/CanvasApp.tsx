@@ -387,7 +387,7 @@ export default function CanvasApp() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* Icon Rail */}
-                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1 shrink-0 overflow-y-auto">
+                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1.5 shrink-0 overflow-y-auto">
                     {sidebarItems.map(item => (
                         <button
                             key={item.id}

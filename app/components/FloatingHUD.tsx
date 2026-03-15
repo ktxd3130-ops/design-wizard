@@ -34,7 +34,7 @@ export default function FloatingHUD({
 
     return (
         <div
-            className="absolute z-50 flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/5 rounded-[10px] pointer-events-auto transition-transform"
+            className="absolute z-50 flex items-center gap-2 px-3.5 py-2 bg-white text-gray-800 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/5 rounded-[10px] pointer-events-auto transition-transform"
             style={{
                 left: designState.activeObjectBox.left + (designState.activeObjectBox.width / 2),
                 top: designState.activeObjectBox.top < 60
@@ -50,13 +50,13 @@ export default function FloatingHUD({
                     <button className="flex justify-between items-center w-24 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer">
                         <span>{activeObj?.fontFamily || 'Inter'}</span> <ChevronDown size={12} className="opacity-50" />
                     </button>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <div className="flex items-center">
                         <button className="p-1 hover:bg-black/5 rounded cursor-pointer" onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj?.fontSize || 24) - 2)}><Minus size={14} /></button>
                         <input type="text" value={activeObj?.fontSize || 24} readOnly className="w-8 text-center bg-transparent text-xs font-semibold outline-none pointer-events-none" />
                         <button className="p-1 hover:bg-black/5 rounded cursor-pointer" onClick={() => fabricRef.current?.updateActiveObjectProperty('fontSize', (activeObj?.fontSize || 24) + 2)}><Plus size={14} /></button>
                     </div>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontWeight', 'bold', 'normal')} className={`p-1.5 hover:bg-black/5 rounded cursor-pointer ${activeObj?.fontWeight === 'bold' ? 'bg-black/10 text-black' : 'text-gray-500'}`}><Bold size={14} /></button>
                     <button onClick={() => fabricRef.current?.toggleActiveObjectProperty('fontStyle', 'italic', 'normal')} className={`p-1.5 hover:bg-black/5 rounded cursor-pointer ${activeObj?.fontStyle === 'italic' ? 'bg-black/10 text-black' : 'text-gray-500'}`}><Italic size={14} /></button>
                 </>
@@ -65,7 +65,7 @@ export default function FloatingHUD({
                     <button className="p-1.5 hover:bg-black/5 rounded cursor-pointer flex items-center justify-center">
                         <div className="w-5 h-5 rounded border border-black/20" style={{ backgroundColor: activeObj.fill || '#000000' }} />
                     </button>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <button className="p-1.5 text-gray-500 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors" title="Stroke">
                         <Pen size={14} />
                     </button>
@@ -74,7 +74,7 @@ export default function FloatingHUD({
                             <LayoutGrid size={14} />
                         </button>
                     )}
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <div className="flex items-center gap-1">
                         <Layers size={12} className="text-gray-400" />
                         <input
@@ -97,11 +97,11 @@ export default function FloatingHUD({
                     >
                         {isRemovingBg ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Remove BG
                     </button>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <button className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer">
                         <Crop size={14} /> Crop
                     </button>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <div className="flex items-center gap-1">
                         <Layers size={12} className="text-gray-400" />
                         <input
@@ -118,7 +118,7 @@ export default function FloatingHUD({
             )}
 
             {/* Global Tools (Always appear for any object) */}
-            <div className="w-px h-4 bg-black/10 mx-1" />
+            <div className="w-px h-4 bg-black/10 mx-1.5" />
             <button onClick={() => activeObj && fabricRef.current?.toggleLock(activeObj.id)} className={`p-1.5 hover:text-black hover:bg-black/5 rounded cursor-pointer transition-colors ${activeObj?.locked ? 'text-red-500 bg-red-50' : 'text-gray-500'}`} title={activeObj?.locked ? "Unlock" : "Lock"}>
                 {activeObj?.locked ? <Lock size={14} /> : <Unlock size={14} />}
             </button>
@@ -130,7 +130,7 @@ export default function FloatingHUD({
             {/* Production Warnings (DPI) */}
             {designState.warnings.some(w => w.objectId === designState.activeObjectId) && (
                 <>
-                    <div className="w-px h-4 bg-black/10 mx-1" />
+                    <div className="w-px h-4 bg-black/10 mx-1.5" />
                     <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold border border-red-200 uppercase tracking-widest shadow-sm">
                         <AlertTriangle size={10} className="animate-pulse" /> Warning
                     </div>

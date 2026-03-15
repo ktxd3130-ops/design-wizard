@@ -44,7 +44,7 @@ export default function BottomBar({
     const currentIndex = designState.currentPageIndex || 0;
 
     return (
-        <div className="h-[52px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0 justify-between gap-4">
+        <div className="h-[52px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-5 shrink-0 justify-between gap-4">
             {/* Left: Page count */}
             <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-white/40">
@@ -78,7 +78,7 @@ export default function BottomBar({
                             )}
                         </button>
                         {/* Page number label */}
-                        <span className="block text-center text-[9px] text-white/40 mt-0.5">{idx + 1}</span>
+                        <span className="block text-center text-[9px] text-white/40 mt-px leading-none">{idx + 1}</span>
 
                         {/* Page context menu */}
                         {hoveredPage === idx && pages.length > 0 && (
