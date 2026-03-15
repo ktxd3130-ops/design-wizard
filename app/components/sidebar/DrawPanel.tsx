@@ -16,21 +16,21 @@ interface DrawPanelProps {
 export function DrawPanel({ isDrawing, setIsDrawing, brushType, setBrushType, brushColor, setBrushColor, brushWidth, setBrushWidth }: DrawPanelProps) {
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0 flex items-center justify-between">
+            <div className="p-5 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-[var(--ui-90)]">Draw</h3>
                 <button
                     onClick={() => setIsDrawing(!isDrawing)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isDrawing ? 'bg-violet-500 text-[var(--ui-100)] shadow-lg shadow-violet-500/25' : 'bg-[var(--ui-10)] text-[var(--ui-70)] hover:bg-[var(--ui-20)] hover:text-[var(--ui-100)]'}`}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${isDrawing ? 'bg-violet-500 text-[var(--ui-100)] shadow-lg shadow-violet-500/25' : 'bg-[var(--ui-10)] text-[var(--ui-70)] hover:bg-[var(--ui-20)] hover:text-[var(--ui-100)]'}`}
                 >
                     {isDrawing ? 'Drawing Active' : 'Enable Drawing'}
                 </button>
             </div>
-            <div className={`flex-1 overflow-y-auto p-4 space-y-6 ${!isDrawing ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
+            <div className={`flex-1 overflow-y-auto p-5 space-y-7 ${!isDrawing ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
 
                 {/* Brush Types */}
                 <div className="space-y-3">
                     <p className="text-[11px] font-bold tracking-wider uppercase text-[var(--ui-50)]">Pens</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                         {[
                             { id: 'pen', icon: <PenTool size={20} />, label: 'Pen' },
                             { id: 'marker', icon: <Pen size={20} />, label: 'Marker' },
@@ -51,7 +51,7 @@ export function DrawPanel({ isDrawing, setIsDrawing, brushType, setBrushType, br
                 {/* Brush Color */}
                 <div className="space-y-3">
                     <p className="text-[11px] font-bold tracking-wider uppercase text-[var(--ui-50)]">Color</p>
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-5 gap-3">
                         {['#ffffff', '#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e'].map(color => (
                             <button
                                 key={color}
