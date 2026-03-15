@@ -25,12 +25,12 @@ export default function CheckoutDrawer({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end animate-in fade-in duration-200">
             <div className="absolute inset-0" onClick={onClose} />
 
-            <div className="relative bg-[#20202e] shadow-2xl w-[420px] h-full flex flex-col border-l border-white/10 animate-in slide-in-from-right duration-300">
-                <div className="p-5 border-b border-white/5 flex justify-between items-center bg-[#252536]">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="relative bg-[var(--surface-1)] shadow-2xl w-[420px] h-full flex flex-col border-l border-[var(--ui-10)] animate-in slide-in-from-right duration-300">
+                <div className="p-5 border-b border-[var(--ui-5)] flex justify-between items-center bg-[var(--surface-2)]">
+                    <h2 className="text-lg font-bold text-[var(--ui-100)] flex items-center gap-2">
                         <ShoppingCart size={20} className="text-violet-400" /> Print Preview
                     </h2>
-                    <button onClick={onClose} className="text-white/40 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
+                    <button onClick={onClose} className="text-[var(--ui-40)] hover:text-[var(--ui-100)] p-1.5 rounded-lg hover:bg-[var(--ui-10)] transition-colors cursor-pointer">
                         ✕
                     </button>
                 </div>
@@ -41,16 +41,16 @@ export default function CheckoutDrawer({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={designState.preview} alt="Preview" className="max-w-full max-h-full object-contain drop-shadow-2xl relative z-10" />
                         ) : (
-                            <span className="text-white/20 text-sm">Generating preview...</span>
+                            <span className="text-[var(--ui-20)] text-sm">Generating preview...</span>
                         )}
-                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-mono text-white/50 border border-white/10 uppercase tracking-widest z-20">
+                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-mono text-[var(--ui-50)] border border-[var(--ui-10)] uppercase tracking-widest z-20">
                             Final Render
                         </div>
                     </div>
 
                     <div className="p-6 flex flex-col gap-6">
                         <div>
-                            <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-3">Pre-Flight Validation</h3>
+                            <h3 className="text-xs text-[var(--ui-30)] uppercase tracking-wider font-semibold mb-3">Pre-Flight Validation</h3>
                             {finalPayload.is_orderable ? (
                                 <div className="bg-emerald-500/10 text-emerald-300 p-4 rounded-xl border border-emerald-500/20 flex flex-col gap-3">
                                     <div className="flex items-start gap-3">
@@ -90,22 +90,22 @@ export default function CheckoutDrawer({
                         </div>
 
                         <div>
-                            <h3 className="text-xs text-white/30 uppercase tracking-wider font-semibold mb-3">System Contract Data</h3>
-                            <div className="bg-black/30 text-emerald-400/80 p-4 rounded-xl text-[10px] font-mono border border-white/5 max-h-[160px] overflow-y-auto">
+                            <h3 className="text-xs text-[var(--ui-30)] uppercase tracking-wider font-semibold mb-3">System Contract Data</h3>
+                            <div className="bg-black/30 text-emerald-400/80 p-4 rounded-xl text-[10px] font-mono border border-[var(--ui-5)] max-h-[160px] overflow-y-auto">
                                 <pre>{JSON.stringify(finalPayload, null, 2)}</pre>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-5 border-t border-white/5 bg-[#252536] flex flex-col gap-3">
+                <div className="p-5 border-t border-[var(--ui-5)] bg-[var(--surface-2)] flex flex-col gap-3">
                     <div className="flex justify-between items-end mb-2 px-1">
-                        <span className="text-white/50 text-sm">Order Total</span>
-                        <span className="font-bold text-2xl tracking-tight text-white">$24.00</span>
+                        <span className="text-[var(--ui-50)] text-sm">Order Total</span>
+                        <span className="font-bold text-2xl tracking-tight text-[var(--ui-100)]">$24.00</span>
                     </div>
                     <button
                         disabled={!finalPayload.is_orderable}
-                        className={`w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 ${finalPayload.is_orderable ? 'hover:scale-[1.02] active:scale-[0.98] cursor-pointer' : 'opacity-50 cursor-not-allowed saturate-0'} transition-all`}
+                        className={`w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-[var(--ui-100)] font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 ${finalPayload.is_orderable ? 'hover:scale-[1.02] active:scale-[0.98] cursor-pointer' : 'opacity-50 cursor-not-allowed saturate-0'} transition-all`}
                     >
                         <ShoppingCart size={16} /> Add to Cart
                     </button>

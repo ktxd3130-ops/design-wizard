@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Sparkles, Download, Undo2, Redo2, Share2,
-    Cloud, CheckCircle2, Loader2, MessageSquare, BarChart2, Shield, Plus
+    Cloud, CheckCircle2, Loader2, MessageSquare, BarChart2, Shield, Plus,
+    Sun, Moon
 } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { BrandConfig } from '@/core/config';
 import { DesignState } from '@/core/types';
+import { useThemeStore } from '@/core/themeStore';
 
 type HeaderMenu = 'file' | 'resize' | 'share' | 'analytics' | null;
 
@@ -19,6 +21,20 @@ export interface TopNavProps {
     activeHeaderMenu: HeaderMenu;
     setActiveHeaderMenu: (menu: HeaderMenu) => void;
     onReviewClick: () => void;
+}
+
+function ThemeToggle() {
+    const { theme, toggleTheme } = useThemeStore();
+    return (
+        <button
+            onClick={toggleTheme}
+            className="p-1.5 text-[var(--ui-70)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+    );
 }
 
 export default function TopNav({
@@ -63,33 +79,33 @@ export default function TopNav({
     }, [designState.objects, designState.backgroundColor]);
 
     return (
-        <header className="h-[52px] bg-[#1e1e2e] border-b border-white/10 flex items-center px-5 gap-4 shrink-0 z-20">
+        <header className="h-[52px] bg-[var(--surface-1)] border-b border-[var(--ui-10)] flex items-center px-5 gap-4 shrink-0 z-20">
             {/* Left cluster */}
             <div className="flex items-center gap-2 relative">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
                     <Sparkles size={16} className="text-white" />
                 </div>
-                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'file' ? null : 'file')} className={`text-sm px-3 py-1.5 rounded-md transition-colors cursor-pointer ${activeHeaderMenu === 'file' ? 'bg-white/20 text-white' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>File</button>
-                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'resize' ? null : 'resize')} className={`text-sm px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer ${activeHeaderMenu === 'resize' ? 'bg-white/20 text-white' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'file' ? null : 'file')} className={`text-sm px-3 py-1.5 rounded-md transition-colors cursor-pointer ${activeHeaderMenu === 'file' ? 'bg-[var(--ui-20)] text-[var(--ui-100)]' : 'text-[var(--ui-80)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)]'}`}>File</button>
+                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'resize' ? null : 'resize')} className={`text-sm px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 cursor-pointer ${activeHeaderMenu === 'resize' ? 'bg-[var(--ui-20)] text-[var(--ui-100)]' : 'text-[var(--ui-80)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)]'}`}>
                     <Sparkles size={12} /> Resize
                 </button>
             </div>
 
             {/* Undo/Redo & Sync */}
-            <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-3">
-                <button onClick={() => fabricRef.current?.undo()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" aria-label="Undo" title="Undo"><Undo2 size={16} /></button>
-                <button onClick={() => fabricRef.current?.redo()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" aria-label="Redo" title="Redo"><Redo2 size={16} /></button>
-                <div className="flex items-center gap-1.5 px-2 ml-1 text-white/40" title={saveStatus === 'saving' ? 'Saving changes...' : saveStatus === 'saved' ? 'Changes saved to cloud' : 'Auto-save enabled'}>
+            <div className="flex items-center gap-1 ml-2 border-l border-[var(--ui-10)] pl-3">
+                <button onClick={() => fabricRef.current?.undo()} className="p-1.5 text-[var(--ui-50)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer" aria-label="Undo" title="Undo"><Undo2 size={16} /></button>
+                <button onClick={() => fabricRef.current?.redo()} className="p-1.5 text-[var(--ui-50)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer" aria-label="Redo" title="Redo"><Redo2 size={16} /></button>
+                <div className="flex items-center gap-1.5 px-2 ml-1 text-[var(--ui-40)]" title={saveStatus === 'saving' ? 'Saving changes...' : saveStatus === 'saved' ? 'Changes saved to cloud' : 'Auto-save enabled'}>
                     {saveStatus === 'saving' ? (
                         <>
                             <Cloud size={16} />
-                            <Loader2 size={10} className="absolute ml-2.5 mt-2.5 animate-spin text-white/40" />
-                            <span className="text-xs text-white/40">Saving...</span>
+                            <Loader2 size={10} className="absolute ml-2.5 mt-2.5 animate-spin text-[var(--ui-40)]" />
+                            <span className="text-xs text-[var(--ui-40)]">Saving...</span>
                         </>
                     ) : saveStatus === 'saved' && showSavedText ? (
                         <>
                             <Cloud size={16} className="text-green-400/70" />
-                            <CheckCircle2 size={10} className="absolute ml-2.5 mt-2.5 bg-[#1e1e2e] rounded-full text-green-400/70" />
+                            <CheckCircle2 size={10} className="absolute ml-2.5 mt-2.5 bg-[var(--surface-1)] rounded-full text-green-400/70" />
                             <span className="text-xs text-green-400/70">Saved</span>
                         </>
                     ) : (
@@ -100,7 +116,7 @@ export default function TopNav({
 
             {/* Center title */}
             <div className="flex-1 flex justify-center">
-                <span className="text-sm text-white/60 bg-white/5 px-4 py-1.5 rounded-lg border border-white/10">
+                <span className="text-sm text-[var(--ui-60)] bg-[var(--ui-5)] px-4 py-1.5 rounded-lg border border-[var(--ui-10)]">
                     {brandConfig?.name || 'Design'} — Custom Design
                 </span>
             </div>
@@ -109,14 +125,15 @@ export default function TopNav({
             <div className="flex items-center gap-2.5">
                 {/* Collaborator Avatars */}
                 <div className="flex items-center mr-3">
-                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold ring-2 ring-[#1e1e2e] z-10" aria-label="Kendall Dale" title="Kendall Dale">K</div>
-                    <button className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white ring-2 ring-[#1e1e2e] z-0 transition-colors ml-1 cursor-pointer" aria-label="Share Design" title="Share Design">
+                    <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold ring-2 ring-[var(--surface-1)] z-10" aria-label="Kendall Dale" title="Kendall Dale">K</div>
+                    <button className="w-7 h-7 rounded-full bg-[var(--ui-10)] hover:bg-[var(--ui-20)] flex items-center justify-center text-[var(--ui-70)] hover:text-[var(--ui-100)] ring-2 ring-[var(--surface-1)] z-0 transition-colors ml-1 cursor-pointer" aria-label="Share Design" title="Share Design">
                         <Plus size={14} />
                     </button>
                 </div>
 
-                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'analytics' ? null : 'analytics')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeHeaderMenu === 'analytics' ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`} aria-label="Analytics" title="Analytics"><BarChart2 size={18} /></button>
-                <button className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" aria-label="Comments" title="Comments"><MessageSquare size={18} /></button>
+                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'analytics' ? null : 'analytics')} className={`p-1.5 rounded-md transition-colors cursor-pointer ${activeHeaderMenu === 'analytics' ? 'bg-[var(--ui-20)] text-[var(--ui-100)]' : 'text-[var(--ui-70)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)]'}`} aria-label="Analytics" title="Analytics"><BarChart2 size={18} /></button>
+                <button className="p-1.5 text-[var(--ui-70)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer" aria-label="Comments" title="Comments"><MessageSquare size={18} /></button>
+                <ThemeToggle />
 
                 {isAdmin && (
                     <button
@@ -128,12 +145,12 @@ export default function TopNav({
                             const a = document.createElement('a'); a.href = url;
                             a.download = `template_${designState.design_id}.json`; a.click();
                         }}
-                        className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1.5 rounded-lg transition-colors ml-1"
+                        className="flex items-center gap-1.5 text-xs bg-[var(--ui-10)] hover:bg-[var(--ui-20)] text-[var(--ui-80)] px-3 py-1.5 rounded-lg transition-colors ml-1"
                     >
                         <Shield size={12} /> Export
                     </button>
                 )}
-                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'share' ? null : 'share')} className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ml-1 cursor-pointer ${activeHeaderMenu === 'share' ? 'bg-white/40 text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}>
+                <button onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'share' ? null : 'share')} className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ml-1 cursor-pointer ${activeHeaderMenu === 'share' ? 'bg-[var(--ui-40)] text-[var(--ui-100)]' : 'bg-[var(--ui-20)] hover:bg-[var(--ui-30)] text-[var(--ui-100)]'}`}>
                     <Share2 size={14} /> Share
                 </button>
                 <button

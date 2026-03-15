@@ -44,10 +44,10 @@ export default function BottomBar({
     const currentIndex = designState.currentPageIndex || 0;
 
     return (
-        <div className="h-[52px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-5 shrink-0 justify-between gap-4">
+        <div className="h-[52px] bg-[var(--surface-1)] border-t border-[var(--ui-5)] flex items-center px-5 shrink-0 justify-between gap-4">
             {/* Left: Page count */}
             <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-white/40">
+                <span className="text-xs text-[var(--ui-40)]">
                     Page {currentIndex + 1} of {pages.length}
                 </span>
             </div>
@@ -66,34 +66,34 @@ export default function BottomBar({
                             className={`relative w-[60px] h-[36px] rounded-md border-2 transition-all overflow-hidden shrink-0 ${
                                 idx === currentIndex
                                     ? 'border-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.3)]'
-                                    : 'border-white/10 hover:border-white/30'
+                                    : 'border-[var(--ui-10)] hover:border-[var(--ui-30)]'
                             }`}
                         >
                             {page.preview ? (
                                 <img src={page.preview} alt={page.label} className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                                    <span className="text-[9px] text-white/40">{idx + 1}</span>
+                                <div className="w-full h-full bg-[var(--ui-5)] flex items-center justify-center">
+                                    <span className="text-[9px] text-[var(--ui-40)]">{idx + 1}</span>
                                 </div>
                             )}
                         </button>
                         {/* Page number label */}
-                        <span className="block text-center text-[9px] text-white/40 mt-px leading-none">{idx + 1}</span>
+                        <span className="block text-center text-[9px] text-[var(--ui-40)] mt-px leading-none">{idx + 1}</span>
 
                         {/* Page context menu */}
                         {hoveredPage === idx && pages.length > 0 && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); setShowPageMenu(showPageMenu === idx ? null : idx); }}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-[#252536] border border-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--surface-2)] border border-[var(--ui-20)] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                             >
                                 <MoreHorizontal size={8} />
                             </button>
                         )}
                         {showPageMenu === idx && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#252536] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden min-w-[120px]">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[var(--surface-2)] border border-[var(--ui-10)] rounded-lg shadow-xl z-50 overflow-hidden min-w-[120px]">
                                 <button
                                     onClick={() => { onDuplicatePage(idx); setShowPageMenu(null); }}
-                                    className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2"
+                                    className="w-full text-left px-3 py-1.5 text-xs text-[var(--ui-80)] hover:bg-[var(--ui-10)] flex items-center gap-2"
                                 >
                                     <Copy size={10} /> Duplicate
                                 </button>
@@ -112,7 +112,7 @@ export default function BottomBar({
                 {/* Add page button */}
                 <button
                     onClick={onAddPage}
-                    className="w-[60px] h-[36px] rounded-md border-2 border-dashed border-white/10 hover:border-violet-500/50 flex items-center justify-center text-white/30 hover:text-violet-400 transition-all shrink-0 cursor-pointer"
+                    className="w-[60px] h-[36px] rounded-md border-2 border-dashed border-[var(--ui-10)] hover:border-violet-500/50 flex items-center justify-center text-[var(--ui-30)] hover:text-violet-400 transition-all shrink-0 cursor-pointer"
                 >
                     <Plus size={16} />
                 </button>
@@ -120,7 +120,7 @@ export default function BottomBar({
 
             {/* Right: Zoom controls */}
             <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => handleZoomChange(zoom - 10)} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                <button onClick={() => handleZoomChange(zoom - 10)} className="p-1.5 text-[var(--ui-40)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer">
                     <ZoomOut size={14} />
                 </button>
                 <input
@@ -131,15 +131,15 @@ export default function BottomBar({
                     onChange={(e) => handleZoomChange(parseInt(e.target.value))}
                     className="w-24 accent-violet-500 cursor-pointer"
                 />
-                <span className="text-xs text-white/60 w-10 text-center font-mono">{zoom}%</span>
-                <button onClick={() => handleZoomChange(zoom + 10)} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                <span className="text-xs text-[var(--ui-60)] w-10 text-center font-mono">{zoom}%</span>
+                <button onClick={() => handleZoomChange(zoom + 10)} className="p-1.5 text-[var(--ui-40)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer">
                     <ZoomIn size={14} />
                 </button>
-                <div className="w-px h-5 bg-white/10 mx-1" />
-                <button className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Grid">
+                <div className="w-px h-5 bg-[var(--ui-10)] mx-1" />
+                <button className="p-1.5 text-[var(--ui-40)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer" title="Grid">
                     <Grid size={14} />
                 </button>
-                <button className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Fullscreen">
+                <button className="p-1.5 text-[var(--ui-40)] hover:text-[var(--ui-100)] hover:bg-[var(--ui-10)] rounded-md transition-colors cursor-pointer" title="Fullscreen">
                     <Maximize2 size={14} />
                 </button>
             </div>

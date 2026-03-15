@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DynamicConfigLoader, BrandConfig } from '@/core/config';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { useDesignStore } from '@/core/storage';
+import { useThemeStore } from '@/core/themeStore';
 import {
     Type, UploadCloud, ChevronRight, LayoutGrid, Layers,
     Sparkles, PenTool, Grid, Blocks, FolderOpen,
@@ -31,6 +32,7 @@ export default function CanvasApp() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<FabricCanvas | null>(null);
     const designState = useDesignStore((s) => s.state);
+    const theme = useThemeStore((s) => s.theme);
     const [mounted, setMounted] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -349,7 +351,7 @@ export default function CanvasApp() {
     ];
 
     return (
-        <div className="flex flex-col h-screen bg-[#1e1e2e] text-white overflow-hidden" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+        <div data-theme={theme} className="flex flex-col h-screen bg-[var(--surface-1)] text-[var(--ui-100)] overflow-hidden" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
             {/* Top Navigation */}
             <TopNav
@@ -387,12 +389,12 @@ export default function CanvasApp() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* Icon Rail */}
-                <nav className="w-[72px] bg-[#1e1e2e] border-r border-white/5 flex flex-col items-center py-3 gap-1.5 shrink-0 overflow-y-auto">
+                <nav className="w-[72px] bg-[var(--surface-1)] border-r border-[var(--ui-5)] flex flex-col items-center py-3 gap-1.5 shrink-0 overflow-y-auto">
                     {sidebarItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => togglePanel(item.id)}
-                            className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === item.id ? 'bg-violet-600/20 text-violet-300' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                            className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === item.id ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
                         >
                             {item.icon}
                             {item.label}
@@ -401,7 +403,7 @@ export default function CanvasApp() {
                     <div className="flex-1" />
                     <button
                         onClick={() => togglePanel('layers')}
-                        className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === 'layers' ? 'bg-violet-600/20 text-violet-300' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                        className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === 'layers' ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
                     >
                         <Layers size={20} />
                         Layers
@@ -409,7 +411,7 @@ export default function CanvasApp() {
                 </nav>
 
                 {/* Side Panel */}
-                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[#252536] border-r border-white/5 shrink-0 overflow-hidden`}>
+                <div className={`relative flex transition-all duration-300 ${activePanel && !isPanelCollapsed ? 'w-[300px]' : 'w-0'} bg-[var(--surface-2)] border-r border-[var(--ui-5)] shrink-0 overflow-hidden`}>
                     <aside className="w-[300px] flex flex-col shrink-0 overflow-hidden absolute inset-y-0 left-0">
                         {activePanel === 'text' && <TextPanel fabricRef={fabricRef} />}
                         {activePanel === 'uploads' && <UploadsPanel fabricRef={fabricRef} designState={designState} onFileUpload={handleFileUpload} />}
@@ -429,7 +431,7 @@ export default function CanvasApp() {
                     <div className="relative z-10 flex items-center shrink-0 w-0">
                         <button
                             onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-                            className="absolute left-0 w-5 h-10 bg-[#252536] border border-y-white/10 border-r-white/10 border-l-transparent rounded-r-[10px] flex items-center justify-center text-white/40 hover:text-white transition-colors shadow-[2px_0_8px_rgba(0,0,0,0.2)] cursor-pointer translate-x-[-1px]"
+                            className="absolute left-0 w-5 h-10 bg-[var(--surface-2)] border border-y-[var(--ui-10)] border-r-[var(--ui-10)] border-l-transparent rounded-r-[10px] flex items-center justify-center text-[var(--ui-40)] hover:text-[var(--ui-100)] transition-colors shadow-[2px_0_8px_rgba(0,0,0,0.2)] cursor-pointer translate-x-[-1px]"
                         >
                             <ChevronRight size={14} className={`transition-transform duration-300 ${!isPanelCollapsed ? 'rotate-180' : ''}`} />
                         </button>
@@ -437,7 +439,7 @@ export default function CanvasApp() {
                 )}
 
                 {/* Canvas Area */}
-                <main className="flex-1 flex flex-col bg-[#323247] overflow-hidden relative">
+                <main className="flex-1 flex flex-col bg-[var(--surface-canvas)] overflow-hidden relative">
                     <div
                         className="flex-1 flex items-center justify-center overflow-hidden p-8 relative"
                         onClick={(e) => {

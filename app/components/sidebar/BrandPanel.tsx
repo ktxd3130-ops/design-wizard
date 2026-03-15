@@ -14,7 +14,7 @@ interface BrandPanelProps {
 export function BrandPanel({ fabricRef, brandConfig, setBrandConfig, isAdmin }: BrandPanelProps) {
     return (
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold">Brand Theme</p>
+            <p className="text-[11px] text-[var(--ui-30)] uppercase tracking-wider font-semibold">Brand Theme</p>
             {[
                 { name: 'StickyLife', brand: 'stickylife', color: '#3b82f6' },
                 { name: 'WallMonkeys', brand: 'wallmonkeys', color: '#f97316' },
@@ -29,18 +29,18 @@ export function BrandPanel({ fabricRef, brandConfig, setBrandConfig, isAdmin }: 
                         fabricRef.current.animateToTheme(config.colors.primary, config.typography.defaultFont);
                     }
                     window.history.pushState({}, '', `?brand=${b.brand}${isAdmin ? '&mode=admin' : ''}`);
-                }} className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                }} className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--ui-5)] hover:bg-[var(--ui-10)] rounded-lg border border-[var(--ui-5)] transition-colors cursor-pointer group">
                     <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: b.color }} />
                     <div className="text-left">
-                        <span className="text-sm font-semibold text-white/80 group-hover:text-white">{b.name}</span>
-                        <span className="block text-[10px] text-white/30">Apply theme</span>
+                        <span className="text-sm font-semibold text-[var(--ui-80)] group-hover:text-[var(--ui-100)]">{b.name}</span>
+                        <span className="block text-[10px] text-[var(--ui-30)]">Apply theme</span>
                     </div>
                 </button>
             ))}
             {isAdmin && (
-                <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-3 flex items-center gap-1"><Shield size={11} /> Template Mapping</p>
-                    <select onChange={(e) => fabricRef.current?.setPlaceholderKey(e.target.value)} className="w-full bg-white/10 border border-white/10 text-white/80 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500/50">
+                <div className="mt-4 pt-4 border-t border-[var(--ui-10)]">
+                    <p className="text-[11px] text-[var(--ui-30)] uppercase tracking-wider font-semibold mb-3 flex items-center gap-1"><Shield size={11} /> Template Mapping</p>
+                    <select onChange={(e) => fabricRef.current?.setPlaceholderKey(e.target.value)} className="w-full bg-[var(--ui-10)] border border-[var(--ui-10)] text-[var(--ui-80)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500/50">
                         <option value="">No Mapping</option>
                         {['{{USER_NAME}}', '{{EMAIL}}', '{{PHONE}}', '{{COMPANY}}'].map(k => <option key={k} value={k}>{k}</option>)}
                     </select>

@@ -1,11 +1,11 @@
 {
-  "servers": [
+  "version": "0.0.1",
+  "configurations": [
     {
-      "name": "Next.js Dev Server",
-      "command": "npm run dev",
-      "url": "http://localhost:3000",
-      "description": "Next.js 16 development server with Turbopack",
-      "env": {}
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
     }
   ]
 }

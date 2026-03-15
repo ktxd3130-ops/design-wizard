@@ -191,7 +191,7 @@ export default function ContextMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute z-50 min-w-[200px] py-1 bg-[#2a2a3d] border border-white/10 rounded-lg shadow-xl shadow-black/50"
+      className="absolute z-50 min-w-[200px] py-1 bg-[var(--surface-3)] border border-[var(--ui-10)] rounded-lg shadow-xl shadow-black/50"
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -205,11 +205,11 @@ export default function ContextMenu({
 
         return (
           <React.Fragment key={sIdx}>
-            {sIdx > 0 && <div className="h-px bg-white/10 my-1" />}
+            {sIdx > 0 && <div className="h-px bg-[var(--ui-10)] my-1" />}
             {visibleItems.map((item) => (
               <div
                 key={item.label}
-                className={`px-3 py-2 text-xs text-white/80 flex items-center justify-between cursor-pointer ${
+                className={`px-3 py-2 text-xs text-[var(--ui-80)] flex items-center justify-between cursor-pointer ${
                   item.disabled
                     ? 'opacity-50 pointer-events-none'
                     : 'hover:bg-violet-500/20'
@@ -221,7 +221,7 @@ export default function ContextMenu({
                   {item.label}
                 </span>
                 {item.shortcut && (
-                  <span className="text-white/30 text-[10px] ml-4">{item.shortcut}</span>
+                  <span className="text-[var(--ui-30)] text-[10px] ml-4">{item.shortcut}</span>
                 )}
               </div>
             ))}
