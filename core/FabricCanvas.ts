@@ -914,8 +914,11 @@ export class FabricCanvas {
         const scaleY = currentHeight / originalTemplateHeight;
         const scale = Math.min(scaleX, scaleY);
 
+        // Extract objects array from template payload (supports both { objects: [...] } and plain [...])
+        const rawObjects = Array.isArray(templateJSON) ? templateJSON : (templateJSON?.objects ?? []);
+
         // Integrator: Auto-fill placeholder keys before rendering
-        const hydratedJSON = PlaceholderService.hydrateTemplate(templateJSON);
+        const hydratedJSON = PlaceholderService.hydrateTemplate(rawObjects);
 
         // Use fabric deserializer
         const enlivenedObjects = await fabric.util.enlivenObjects(hydratedJSON);

@@ -15,7 +15,8 @@ export class PlaceholderService {
      */
     static hydrateTemplate(templateArray: any[]): any[] {
         return templateArray.map(obj => {
-            if (obj.type === 'textbox' || obj.type === 'text') {
+            const t = (obj.type || '').toLowerCase();
+            if (t === 'textbox' || t === 'text' || t === 'i-text') {
                 let hydratedText = obj.text || '';
 
                 // Replace all known tokens
