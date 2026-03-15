@@ -3,7 +3,8 @@
 import React from 'react';
 import {
     Plus, Copy, Download, Settings2, FolderOpen,
-    Sparkles, Activity, Eye, MousePointer2, Link
+    Sparkles, Activity, Eye, MousePointer2, Link,
+    ChevronRight, Image as ImageIcon, FileCode, FileText
 } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { DesignState } from '@/core/types';
@@ -50,10 +51,23 @@ export default function HeaderDropdowns({
                         <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center justify-between group cursor-pointer text-white/90">
                             <div className="flex items-center gap-3"><Copy size={16} className="text-white/50 group-hover:text-white" /> Make a copy</div>
                         </button>
-                        <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center justify-between group cursor-pointer text-white/90">
-                            <div className="flex items-center gap-3"><Download size={16} className="text-white/50 group-hover:text-white" /> Download</div>
-                            <span className="text-[10px] text-white/40 tracking-widest font-mono">⌘D</span>
-                        </button>
+                        <div className="relative group/download">
+                            <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center justify-between group cursor-pointer text-white/90">
+                                <div className="flex items-center gap-3"><Download size={16} className="text-white/50 group-hover:text-white" /> Download</div>
+                                <ChevronRight size={12} className="text-white/30" />
+                            </button>
+                            <div className="absolute left-full top-0 ml-1 w-[160px] bg-[#252536] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/download:opacity-100 group-hover/download:visible transition-all z-50 p-1">
+                                <button onClick={() => { fabricRef.current?.exportAsPNG(); setActiveHeaderMenu(null); }} className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md text-sm text-white/80 transition-colors flex items-center gap-2">
+                                    <ImageIcon size={14} className="text-blue-400" /> PNG
+                                </button>
+                                <button onClick={() => { fabricRef.current?.exportAsSVG(); setActiveHeaderMenu(null); }} className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md text-sm text-white/80 transition-colors flex items-center gap-2">
+                                    <FileCode size={14} className="text-green-400" /> SVG
+                                </button>
+                                <button onClick={() => { fabricRef.current?.exportAsPDF(); setActiveHeaderMenu(null); }} className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md text-sm text-white/80 transition-colors flex items-center gap-2">
+                                    <FileText size={14} className="text-red-400" /> PDF
+                                </button>
+                            </div>
+                        </div>
                         <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center justify-between group cursor-pointer text-white/90">
                             <div className="flex items-center gap-3"><Settings2 size={16} className="text-white/50 group-hover:text-white" /> Version history</div>
                         </button>

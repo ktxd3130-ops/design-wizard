@@ -21,6 +21,8 @@ const initialState: DesignState = {
     activeObjectId: null,
     brandId: null,
     activeObjectBox: null,
+    pages: [],
+    currentPageIndex: 0,
 };
 
 export const useDesignStore = create<DesignStore>()(

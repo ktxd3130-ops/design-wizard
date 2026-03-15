@@ -75,9 +75,18 @@ export default function FloatingHUD({
                         </button>
                     )}
                     <div className="w-px h-4 bg-black/10 mx-1" />
-                    <button className="px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer flex items-center gap-1.5 text-gray-600">
-                        <Layers size={14} /> Opacity
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <Layers size={12} className="text-gray-400" />
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={Math.round((activeObj?.opacity ?? 1) * 100)}
+                            onChange={(e) => fabricRef.current?.setOpacity(parseInt(e.target.value))}
+                            className="w-16 accent-violet-500 cursor-pointer h-1"
+                        />
+                        <span className="text-[9px] text-gray-400 w-6">{Math.round((activeObj?.opacity ?? 1) * 100)}%</span>
+                    </div>
                 </>
             ) : (
                 <>
@@ -93,9 +102,18 @@ export default function FloatingHUD({
                         <Crop size={14} /> Crop
                     </button>
                     <div className="w-px h-4 bg-black/10 mx-1" />
-                    <button className="px-2 py-1.5 hover:bg-black/5 rounded text-xs font-semibold cursor-pointer flex items-center gap-1.5">
-                        <Layers size={14} /> Opacity
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <Layers size={12} className="text-gray-400" />
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={Math.round((activeObj?.opacity ?? 1) * 100)}
+                            onChange={(e) => fabricRef.current?.setOpacity(parseInt(e.target.value))}
+                            className="w-16 accent-violet-500 cursor-pointer h-1"
+                        />
+                        <span className="text-[9px] text-gray-400 w-6">{Math.round((activeObj?.opacity ?? 1) * 100)}%</span>
+                    </div>
                 </>
             )}
 

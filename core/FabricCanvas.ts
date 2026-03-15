@@ -5,6 +5,7 @@ import { DPICalculator } from './ProductionUtils';
 import { MockAIService } from './services/MockAI';
 import { PlaceholderService } from './services/PlaceholderService';
 import { SnappingEngine, HistoryManager, DrawingMode } from './canvas';
+import { loadGoogleFont } from './GoogleFonts';
 
 export class FabricCanvas {
     public canvas: fabric.Canvas;
@@ -690,16 +691,13 @@ export class FabricCanvas {
 
     public async updateFontFamily(fontFamily: string) {
         const activeObj = this.canvas.getActiveObject();
-        if (!activeObj || activeObj.type !== 'textbox') return;
+        if (!activeObj || (activeObj.type !== 'textbox' && activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
 
-        // Font Loading Guard
         activeObj.set('isFontLoading', true);
-        this.syncToStore(); // Trigger UI loader instantly
+        this.syncToStore();
 
         try {
-            // Mocking a network font load delay
-            await new Promise(resolve => setTimeout(resolve, 800));
-            // Actual apply step
+            await loadGoogleFont(fontFamily);
             activeObj.set('fontFamily', fontFamily);
             this.canvas.requestRenderAll();
         } finally {
@@ -766,7 +764,18 @@ export class FabricCanvas {
     public updateActiveObjectProperty(key: string, value: any) {
         const activeObj = this.canvas.getActiveObject();
         if (activeObj) {
-            activeObj.set(key, value);
+            if (key === 'shadow' && value && typeof value === 'object') {
+                // Create a proper Fabric Shadow object for live preview
+                const shadow = new fabric.Shadow({
+                    color: value.color || '#000000',
+                    blur: value.blur || 0,
+                    offsetX: value.offsetX || 0,
+                    offsetY: value.offsetY || 0,
+                });
+                activeObj.set('shadow', shadow);
+            } else {
+                activeObj.set(key, value);
+            }
             this.canvas.requestRenderAll();
             this.syncToStore();
             this.updateActiveObjectBox(); // In case font/size changed box bounds
@@ -1135,5 +1144,240 @@ export class FabricCanvas {
         if (changed) {
             this.canvas.requestRenderAll();
         }
+    }
+
+    // ── Export Methods ──────────────────────────────────────────
+
+    public exportAsPNG(filename: string = 'design.png') {
+        const dataUrl = this.canvas.toDataURL({ format: 'png', multiplier: 2 });
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        link.click();
+    }
+
+    public exportAsSVG(filename: string = 'design.svg') {
+        const svg = this.canvas.toSVG();
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    public exportAsPDF(filename: string = 'design.pdf') {
+        // Use canvas toDataURL and create a simple PDF wrapper
+        const dataUrl = this.canvas.toDataURL({ format: 'png', multiplier: 2 });
+        const width = this.baseWidth;
+        const height = this.baseHeight;
+
+        // Minimal PDF generation (no external dependency needed)
+        const imgData = dataUrl.split(',')[1];
+        const pdfWidth = width * 0.75; // convert px to pt (96dpi -> 72dpi)
+        const pdfHeight = height * 0.75;
+
+        // Create a simple PDF with embedded PNG
+        // For production you'd use pdf-lib, but this works for MVP
+        const pdf = `%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pdfWidth} ${pdfHeight}]/Contents 4 0 R/Resources<</XObject<</Img 5 0 R>>>>>>endobj
+4 0 obj<</Length 44>>stream
+q ${pdfWidth} 0 0 ${pdfHeight} 0 0 cm /Img Do Q
+endstream
+endobj
+5 0 obj<</Type/XObject/Subtype/Image/Width ${width * 2}/Height ${height * 2}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${imgData.length}>>stream
+`;
+        // For a proper PDF we'll use the PNG data URL approach with a download
+        // Simplified: just download as PNG with .pdf extension won't work well
+        // Instead, open in a new tab for print-to-PDF
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html><head><title>${filename}</title><style>
+                    @page { size: ${width}px ${height}px; margin: 0; }
+                    body { margin: 0; padding: 0; }
+                    img { width: 100%; height: 100%; }
+                </style></head><body>
+                    <img src="${dataUrl}" onload="window.print();"/>
+                </body></html>
+            `);
+            printWindow.document.close();
+        }
+    }
+
+    // ── Image Filter Methods ────────────────────────────────────
+
+    public applyImageFilter(filterType: string, value: number) {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj || activeObj.type !== 'image') return;
+
+        const img = activeObj as fabric.Image;
+
+        // Remove existing filter of this type
+        img.filters = (img.filters || []).filter((f: any) => f.type !== filterType);
+
+        if (value !== 0) {
+            let filter: any = null;
+
+            switch (filterType) {
+                case 'Brightness':
+                    filter = new fabric.filters.Brightness({ brightness: value / 100 });
+                    break;
+                case 'Contrast':
+                    filter = new fabric.filters.Contrast({ contrast: value / 100 });
+                    break;
+                case 'Saturation':
+                    filter = new fabric.filters.Saturation({ saturation: value / 100 });
+                    break;
+                case 'Blur':
+                    filter = new fabric.filters.Blur({ blur: value / 100 });
+                    break;
+                case 'Grayscale':
+                    if (value > 0) filter = new fabric.filters.Grayscale();
+                    break;
+                case 'Sepia':
+                    if (value > 0) filter = new fabric.filters.Sepia();
+                    break;
+                case 'Invert':
+                    if (value > 0) filter = new fabric.filters.Invert();
+                    break;
+            }
+
+            if (filter) {
+                img.filters.push(filter);
+            }
+        }
+
+        img.applyFilters();
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public resetImageFilters() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj || activeObj.type !== 'image') return;
+
+        const img = activeObj as fabric.Image;
+        img.filters = [];
+        img.applyFilters();
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    // ── Flip/Mirror Methods ─────────────────────────────────────
+
+    public flipHorizontal() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+        activeObj.set('flipX', !activeObj.flipX);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public flipVertical() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+        activeObj.set('flipY', !activeObj.flipY);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    // ── Alignment Methods ───────────────────────────────────────
+
+    public alignObjects(alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+
+        const canvasWidth = this.canvas.getWidth() / this.canvas.getZoom();
+        const canvasHeight = this.canvas.getHeight() / this.canvas.getZoom();
+
+        switch (alignment) {
+            case 'left':
+                activeObj.set('left', 0);
+                break;
+            case 'center':
+                activeObj.set('left', canvasWidth / 2 - activeObj.getScaledWidth() / 2);
+                break;
+            case 'right':
+                activeObj.set('left', canvasWidth - activeObj.getScaledWidth());
+                break;
+            case 'top':
+                activeObj.set('top', 0);
+                break;
+            case 'middle':
+                activeObj.set('top', canvasHeight / 2 - activeObj.getScaledHeight() / 2);
+                break;
+            case 'bottom':
+                activeObj.set('top', canvasHeight - activeObj.getScaledHeight());
+                break;
+        }
+
+        activeObj.setCoords();
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+        this.updateActiveObjectBox();
+    }
+
+    public distributeObjects(direction: 'horizontal' | 'vertical') {
+        const activeObjects = this.canvas.getActiveObjects();
+        if (activeObjects.length < 3) return;
+
+        if (direction === 'horizontal') {
+            const sorted = [...activeObjects].sort((a, b) => (a.left || 0) - (b.left || 0));
+            const first = sorted[0].left || 0;
+            const last = (sorted[sorted.length - 1].left || 0);
+            const gap = (last - first) / (sorted.length - 1);
+            sorted.forEach((obj, i) => {
+                obj.set('left', first + gap * i);
+                obj.setCoords();
+            });
+        } else {
+            const sorted = [...activeObjects].sort((a, b) => (a.top || 0) - (b.top || 0));
+            const first = sorted[0].top || 0;
+            const last = (sorted[sorted.length - 1].top || 0);
+            const gap = (last - first) / (sorted.length - 1);
+            sorted.forEach((obj, i) => {
+                obj.set('top', first + gap * i);
+                obj.setCoords();
+            });
+        }
+
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    // ── Opacity Method ──────────────────────────────────────────
+
+    public setOpacity(value: number) {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+        activeObj.set('opacity', value / 100);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public async saveCurrentPageState(): Promise<string> {
+        return JSON.stringify(this.canvas.toObject(['id', 'locked', 'autoSize', 'placeholderKey', 'proxyUrl', 'highResUrl', 's3Url', 'maxPrintWidth', 'maxPrintHeight', 'isFontLoading']));
+    }
+
+    public async loadPageState(pageJSON: string) {
+        try {
+            const json = JSON.parse(pageJSON);
+            await this.canvas.loadFromJSON(json);
+            this.canvas.requestRenderAll();
+            this.syncToStore();
+        } catch (err) {
+            console.error('Failed to load page state:', err);
+        }
+    }
+
+    public clearCanvas() {
+        this.canvas.clear();
+        this.canvas.backgroundColor = '#ffffff';
+        this.canvas.requestRenderAll();
+        this.syncToStore();
     }
 }

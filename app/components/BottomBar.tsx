@@ -1,77 +1,147 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
-    AlignLeft, Minus, Plus, ChevronRight, LayoutGrid
+    ZoomIn, ZoomOut, Plus, Copy, Trash2, Grid, Maximize2,
+    MoreHorizontal
 } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
+import { DesignState, CanvasPage } from '@/core/types';
 
 export interface BottomBarProps {
     fabricRef: React.RefObject<FabricCanvas | null>;
     zoom: number;
     setZoom: (z: number) => void;
+    designState: DesignState;
+    onSwitchPage: (index: number) => void;
+    onAddPage: () => void;
+    onDuplicatePage: (index: number) => void;
+    onDeletePage: (index: number) => void;
 }
 
 export default function BottomBar({
     fabricRef,
     zoom,
     setZoom,
+    designState,
+    onSwitchPage,
+    onAddPage,
+    onDuplicatePage,
+    onDeletePage,
 }: BottomBarProps) {
+    const [hoveredPage, setHoveredPage] = useState<number | null>(null);
+    const [showPageMenu, setShowPageMenu] = useState<number | null>(null);
+
+    const handleZoomChange = (newZoom: number) => {
+        const clamped = Math.max(10, Math.min(500, newZoom));
+        setZoom(clamped);
+        if (fabricRef.current?.setManualZoom) {
+            fabricRef.current.setManualZoom(clamped);
+        }
+    };
+
+    const pages = designState.pages.length > 0 ? designState.pages : [{ id: 'default', label: 'Page 1', canvasJSON: '', preview: designState.preview }];
+    const currentIndex = designState.currentPageIndex || 0;
+
     return (
-        <div className="h-[48px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0 justify-between">
-            {/* Left: Notes & Timer */}
-            <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors cursor-pointer">
-                    <AlignLeft size={14} /> Notes
-                </button>
-                <button className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors cursor-pointer">
-                    <div className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center"><Minus size={6} className="rotate-90" /></div> Timer
+        <div className="h-[52px] bg-[#1e1e2e] border-t border-white/5 flex items-center px-4 shrink-0 justify-between gap-4">
+            {/* Left: Page count */}
+            <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-white/40">
+                    Page {currentIndex + 1} of {pages.length}
+                </span>
+            </div>
+
+            {/* Center: Page thumbnails */}
+            <div className="flex-1 flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide px-4">
+                {pages.map((page, idx) => (
+                    <div
+                        key={page.id}
+                        className="relative group"
+                        onMouseEnter={() => setHoveredPage(idx)}
+                        onMouseLeave={() => { setHoveredPage(null); setShowPageMenu(null); }}
+                    >
+                        <button
+                            onClick={() => onSwitchPage(idx)}
+                            className={`relative w-[60px] h-[36px] rounded-md border-2 transition-all overflow-hidden shrink-0 ${
+                                idx === currentIndex
+                                    ? 'border-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.3)]'
+                                    : 'border-white/10 hover:border-white/30'
+                            }`}
+                        >
+                            {page.preview ? (
+                                <img src={page.preview} alt={page.label} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                    <span className="text-[9px] text-white/40">{idx + 1}</span>
+                                </div>
+                            )}
+                        </button>
+                        {/* Page number label */}
+                        <span className="block text-center text-[9px] text-white/40 mt-0.5">{idx + 1}</span>
+
+                        {/* Page context menu */}
+                        {hoveredPage === idx && pages.length > 0 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowPageMenu(showPageMenu === idx ? null : idx); }}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-[#252536] border border-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            >
+                                <MoreHorizontal size={8} />
+                            </button>
+                        )}
+                        {showPageMenu === idx && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#252536] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden min-w-[120px]">
+                                <button
+                                    onClick={() => { onDuplicatePage(idx); setShowPageMenu(null); }}
+                                    className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2"
+                                >
+                                    <Copy size={10} /> Duplicate
+                                </button>
+                                {pages.length > 1 && (
+                                    <button
+                                        onClick={() => { onDeletePage(idx); setShowPageMenu(null); }}
+                                        className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                                    >
+                                        <Trash2 size={10} /> Delete
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {/* Add page button */}
+                <button
+                    onClick={onAddPage}
+                    className="w-[60px] h-[36px] rounded-md border-2 border-dashed border-white/10 hover:border-violet-500/50 flex items-center justify-center text-white/30 hover:text-violet-400 transition-all shrink-0 cursor-pointer"
+                >
+                    <Plus size={16} />
                 </button>
             </div>
 
-            {/* Center: Slide/Page Thumbnails */}
-            <div className="flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
-                <div className="h-8 w-12 bg-white rounded flex items-center justify-center text-[10px] text-black font-semibold shadow-sm border-2 border-violet-500 cursor-pointer" aria-label="Current Page" title="Current Page">
-                    1
-                </div>
-                <button disabled={true} className="h-8 px-2 bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded flex items-center justify-center text-white/50 transition-colors" aria-label="Add Page" title="Add Page">
-                    <Plus size={14} /> <ChevronRight size={14} className="rotate-90 ml-1 opacity-50" />
+            {/* Right: Zoom controls */}
+            <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => handleZoomChange(zoom - 10)} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                    <ZoomOut size={14} />
                 </button>
-            </div>
-
-            {/* Right: Zoom slider, Grid view, Fullscreen */}
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <input
-                        type="range"
-                        min="10"
-                        max="500"
-                        value={zoom}
-                        onChange={(e) => {
-                            const z = parseInt(e.target.value);
-                            setZoom(z);
-                            // Update actual canvas + DOM dimensions
-                            if (fabricRef.current && (fabricRef.current as any).setManualZoom) {
-                                (fabricRef.current as any).setManualZoom(z);
-                            } else {
-                                fabricRef.current?.canvas.setZoom(z / 100);
-                                fabricRef.current?.canvas.requestRenderAll();
-                            }
-                        }}
-                        className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
-                        aria-label="Zoom Level"
-                        title="Zoom Level"
-                    />
-                    <span className="text-xs text-white/70 min-w-[32px]">{zoom}%</span>
-                </div>
-                <div className="w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2 text-xs text-white/50">
-                    <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded cursor-pointer hover:bg-white/10 hover:text-white transition-colors" aria-label="Page List" title="Page List">
-                        <LayoutGrid size={14} /> Pages 1 / 1
-                    </span>
-                    <button className="p-1.5 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" aria-label="Grid View" title="Grid View"><LayoutGrid size={14} /></button>
-                    <button className="p-1.5 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer" aria-label="Fullscreen View" title="Fullscreen View"><Minus size={14} className="rotate-45" /></button>
-                </div>
+                <input
+                    type="range"
+                    min="10"
+                    max="500"
+                    value={zoom}
+                    onChange={(e) => handleZoomChange(parseInt(e.target.value))}
+                    className="w-24 accent-violet-500 cursor-pointer"
+                />
+                <span className="text-xs text-white/60 w-10 text-center font-mono">{zoom}%</span>
+                <button onClick={() => handleZoomChange(zoom + 10)} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                    <ZoomIn size={14} />
+                </button>
+                <div className="w-px h-5 bg-white/10 mx-1" />
+                <button className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Grid">
+                    <Grid size={14} />
+                </button>
+                <button className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Fullscreen">
+                    <Maximize2 size={14} />
+                </button>
             </div>
         </div>
     );

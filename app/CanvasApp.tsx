@@ -8,8 +8,9 @@ import {
     Type, UploadCloud, ChevronRight, LayoutGrid, Layers,
     Sparkles, PenTool, Grid, Blocks, FolderOpen,
 } from 'lucide-react';
-import { SessionAsset, OpenMagePayload } from '@/core/types';
+import { SessionAsset, OpenMagePayload, CanvasPage } from '@/core/types';
 import { serializeForOpenMage } from '@/core/OpenMageAPI';
+import { preloadPopularFonts } from '@/core/GoogleFonts';
 
 import TopNav from './components/TopNav';
 import ContextToolbar from './components/ContextToolbar';
@@ -52,6 +53,7 @@ export default function CanvasApp() {
     // ── Lifecycle ───────────────────────────────────────────────
     useEffect(() => {
         setMounted(true);
+        preloadPopularFonts();
         const params = new URLSearchParams(window.location.search);
         const currentBrand = params.get('brand') || 'stickylife';
         const config = DynamicConfigLoader.loadConfig(currentBrand);
@@ -201,6 +203,134 @@ export default function CanvasApp() {
         setGenFillPrompt('');
     };
 
+    // ── Multi-Page Handlers ─────────────────────────────────────
+    const handleSwitchPage = async (index: number) => {
+        if (!fabricRef.current) return;
+        const currentPages = [...designState.pages];
+        const currentIndex = designState.currentPageIndex || 0;
+
+        // Save current page state
+        const currentJSON = await fabricRef.current.saveCurrentPageState();
+        const currentPreview = designState.preview;
+
+        if (currentPages[currentIndex]) {
+            currentPages[currentIndex] = {
+                ...currentPages[currentIndex],
+                canvasJSON: currentJSON,
+                preview: currentPreview,
+            };
+        }
+
+        // Load target page
+        if (currentPages[index] && currentPages[index].canvasJSON) {
+            await fabricRef.current.loadPageState(currentPages[index].canvasJSON);
+        }
+
+        useDesignStore.getState().syncCanvasState({
+            pages: currentPages,
+            currentPageIndex: index
+        });
+    };
+
+    const handleAddPage = async () => {
+        if (!fabricRef.current) return;
+        const currentPages = [...designState.pages];
+        const currentIndex = designState.currentPageIndex || 0;
+
+        // If no pages exist yet, save the current canvas as page 0
+        if (currentPages.length === 0) {
+            const json = await fabricRef.current.saveCurrentPageState();
+            currentPages.push({
+                id: crypto.randomUUID(),
+                label: 'Page 1',
+                canvasJSON: json,
+                preview: designState.preview,
+            });
+        } else {
+            // Save current page
+            const currentJSON = await fabricRef.current.saveCurrentPageState();
+            if (currentPages[currentIndex]) {
+                currentPages[currentIndex] = {
+                    ...currentPages[currentIndex],
+                    canvasJSON: currentJSON,
+                    preview: designState.preview,
+                };
+            }
+        }
+
+        // Add new blank page
+        const newPage: CanvasPage = {
+            id: crypto.randomUUID(),
+            label: `Page ${currentPages.length + 1}`,
+            canvasJSON: '',
+            preview: null,
+        };
+        currentPages.push(newPage);
+
+        // Switch to new page
+        fabricRef.current.clearCanvas();
+
+        useDesignStore.getState().syncCanvasState({
+            pages: currentPages,
+            currentPageIndex: currentPages.length - 1,
+        });
+    };
+
+    const handleDuplicatePage = async (index: number) => {
+        if (!fabricRef.current) return;
+        const currentPages = [...designState.pages];
+        const currentIndex = designState.currentPageIndex || 0;
+
+        // Save current page first
+        const currentJSON = await fabricRef.current.saveCurrentPageState();
+        if (currentPages[currentIndex]) {
+            currentPages[currentIndex] = {
+                ...currentPages[currentIndex],
+                canvasJSON: currentJSON,
+                preview: designState.preview,
+            };
+        }
+
+        const source = currentPages[index];
+        if (!source) return;
+
+        const duplicate: CanvasPage = {
+            id: crypto.randomUUID(),
+            label: `${source.label} (copy)`,
+            canvasJSON: source.canvasJSON,
+            preview: source.preview,
+        };
+
+        currentPages.splice(index + 1, 0, duplicate);
+
+        // Switch to duplicated page
+        await fabricRef.current.loadPageState(duplicate.canvasJSON);
+
+        useDesignStore.getState().syncCanvasState({
+            pages: currentPages,
+            currentPageIndex: index + 1,
+        });
+    };
+
+    const handleDeletePage = async (index: number) => {
+        if (!fabricRef.current) return;
+        const currentPages = [...designState.pages];
+        if (currentPages.length <= 1) return;
+
+        currentPages.splice(index, 1);
+        const newIndex = Math.min(index, currentPages.length - 1);
+
+        // Load the new current page
+        if (currentPages[newIndex] && currentPages[newIndex].canvasJSON) {
+            await fabricRef.current.loadPageState(currentPages[newIndex].canvasJSON);
+        }
+
+        useDesignStore.getState().syncCanvasState({
+            pages: currentPages,
+            currentPageIndex: newIndex,
+        });
+    };
+
     if (!mounted) return null;
 
     // ── Sidebar nav items ───────────────────────────────────────
@@ -284,7 +414,7 @@ export default function CanvasApp() {
                         {activePanel === 'draw' && <DrawPanel isDrawing={isDrawing} setIsDrawing={setIsDrawing} brushType={brushType} setBrushType={setBrushType} brushColor={brushColor} setBrushColor={setBrushColor} brushWidth={brushWidth} setBrushWidth={setBrushWidth} />}
                         {activePanel === 'projects' && <ProjectsPanel />}
                         {activePanel === 'apps' && <AppsPanel fabricRef={fabricRef} genFillPrompt={genFillPrompt} setGenFillPrompt={setGenFillPrompt} isGenFillActive={isGenFillActive} onGenFill={handleGenFillMock} />}
-                        {activePanel === 'layers' && <LayersPanel designState={designState} />}
+                        {activePanel === 'layers' && <LayersPanel designState={designState} fabricRef={fabricRef} />}
                     </aside>
                 </div>
 
@@ -310,8 +440,29 @@ export default function CanvasApp() {
                                 fabricRef.current.canvas.requestRenderAll();
                             }
                         }}
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e); }}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('ring-2', 'ring-violet-500/50'); }}
+                        onDragLeave={(e) => { e.currentTarget.classList.remove('ring-2', 'ring-violet-500/50'); }}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.currentTarget.classList.remove('ring-2', 'ring-violet-500/50');
+
+                            const dragType = e.dataTransfer.getData('application/design-wizard-type');
+                            const dragData = e.dataTransfer.getData('application/design-wizard-data');
+
+                            if (dragType === 'shape') {
+                                fabricRef.current?.addShape(dragData as any, brandConfig?.colors.primary);
+                            } else if (dragType === 'text') {
+                                fabricRef.current?.addText(dragData || 'Your text here');
+                            } else if (dragType === 'image') {
+                                fabricRef.current?.addImage(dragData, crypto.randomUUID());
+                            } else if (dragType === 'template') {
+                                // Template drag handled separately
+                            } else {
+                                // Fall back to file upload
+                                handleFileUpload(e);
+                            }
+                        }}
                     >
                         <div className="relative bg-white rounded shadow-2xl shadow-black/40 inline-flex shrink-0">
                             <FloatingHUD
@@ -325,7 +476,16 @@ export default function CanvasApp() {
                         </div>
                     </div>
 
-                    <BottomBar fabricRef={fabricRef} zoom={zoom} setZoom={setZoom} />
+                    <BottomBar
+                        fabricRef={fabricRef}
+                        zoom={zoom}
+                        setZoom={setZoom}
+                        designState={designState}
+                        onSwitchPage={handleSwitchPage}
+                        onAddPage={handleAddPage}
+                        onDuplicatePage={handleDuplicatePage}
+                        onDeletePage={handleDeletePage}
+                    />
                 </main>
             </div>
 

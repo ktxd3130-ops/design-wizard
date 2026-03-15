@@ -16,6 +16,8 @@ const makeState = (overrides: Partial<DesignState> = {}): DesignState => ({
     activeObjectId: null,
     brandId: null,
     activeObjectBox: null,
+    pages: [],
+    currentPageIndex: 0,
     ...overrides,
 });
 

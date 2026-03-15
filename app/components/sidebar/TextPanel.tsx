@@ -19,7 +19,7 @@ export function TextPanel({ fabricRef }: TextPanelProps) {
                 <input placeholder="Search fonts and combinations" className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white/80 placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all" />
             </div>
 
-            <button onClick={() => handleAddText()} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-pointer">
+            <button draggable onDragStart={(e) => { e.dataTransfer.setData('application/design-wizard-type', 'text'); e.dataTransfer.setData('application/design-wizard-data', 'Your text here'); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => handleAddText()} className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-lg shadow-violet-500/20 cursor-grab active:cursor-grabbing">
                 <Type size={18} /> Add a text box
             </button>
 
@@ -30,13 +30,13 @@ export function TextPanel({ fabricRef }: TextPanelProps) {
             <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mt-6 mb-2">Default text styles</p>
 
             <div className="space-y-2">
-                <button onClick={() => handleAddText('Heading', { fontSize: 48, fontWeight: 'bold' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                <button draggable onDragStart={(e) => { e.dataTransfer.setData('application/design-wizard-type', 'text'); e.dataTransfer.setData('application/design-wizard-data', 'Heading'); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => handleAddText('Heading', { fontSize: 48, fontWeight: 'bold' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-grab active:cursor-grabbing shadow-sm">
                     <span className="text-lg font-bold">Add a heading</span>
                 </button>
-                <button onClick={() => handleAddText('Subheading', { fontSize: 32, fontWeight: 600 })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                <button draggable onDragStart={(e) => { e.dataTransfer.setData('application/design-wizard-type', 'text'); e.dataTransfer.setData('application/design-wizard-data', 'Subheading'); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => handleAddText('Subheading', { fontSize: 32, fontWeight: 600 })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-grab active:cursor-grabbing shadow-sm">
                     <span className="text-sm font-semibold">Add a subheading</span>
                 </button>
-                <button onClick={() => handleAddText('Body text', { fontSize: 24, fontWeight: 'normal' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-pointer shadow-sm">
+                <button draggable onDragStart={(e) => { e.dataTransfer.setData('application/design-wizard-type', 'text'); e.dataTransfer.setData('application/design-wizard-data', 'Body text'); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => handleAddText('Body text', { fontSize: 24, fontWeight: 'normal' })} className="w-full text-left px-4 py-3 bg-white text-black hover:bg-gray-100 rounded-lg border border-transparent hover:border-violet-500 transition-all cursor-grab active:cursor-grabbing shadow-sm">
                     <span className="text-xs">Add a little bit of body text</span>
                 </button>
             </div>
@@ -69,7 +69,7 @@ export function TextPanel({ fabricRef }: TextPanelProps) {
                 { title: 'Courier', sub: 'Monospace Code', ff: 'courier' },
                 { title: 'Verdana', sub: 'Clean & Modern', ff: 'verdana' },
             ].map(f => (
-                <button key={f.ff} onClick={() => fabricRef.current?.updateFontFamily(f.ff)} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-pointer group">
+                <button key={f.ff} draggable onDragStart={(e) => { e.dataTransfer.setData('application/design-wizard-type', 'text'); e.dataTransfer.setData('application/design-wizard-data', f.title); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => fabricRef.current?.updateFontFamily(f.ff)} className="w-full text-left px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-colors cursor-grab active:cursor-grabbing group">
                     <span className="text-base font-bold text-white/80 group-hover:text-white" style={{ fontFamily: f.ff }}>{f.title}</span>
                     <span className="block text-[11px] text-white/30 mt-0.5">{f.sub}</span>
                 </button>

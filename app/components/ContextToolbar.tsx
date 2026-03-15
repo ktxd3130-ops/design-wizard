@@ -4,11 +4,13 @@ import React from 'react';
 import {
     AlertTriangle, Loader2,
     Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-    Minus, Plus, Sparkles, Layers, ChevronDown, Crop
+    Minus, Plus, Sparkles, Layers, ChevronDown, Crop,
+    FlipHorizontal2, FlipVertical2, SlidersHorizontal
 } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { BrandConfig } from '@/core/config';
 import { DesignState } from '@/core/types';
+import { GOOGLE_FONTS } from '@/core/GoogleFonts';
 
 export interface ContextToolbarProps {
     fabricRef: React.RefObject<FabricCanvas | null>;
@@ -41,16 +43,16 @@ export default function ContextToolbar({
                         <button className="flex items-center justify-between gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-sm text-white/90 min-w-[140px] transition-colors cursor-pointer" aria-label="Font Family" title="Font Family">
                             <span>{activeObj.fontFamily || 'Sans Serif'}</span> <ChevronDown size={12} className="text-white/40 group-hover/font:rotate-180 transition-transform" />
                         </button>
-                        <div className="absolute top-full left-0 mt-1 w-[180px] bg-[#2a2a3d] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/font:opacity-100 group-hover/font:visible transition-all z-50 overflow-hidden flex flex-col">
+                        <div className="absolute top-full left-0 mt-1 w-[180px] max-h-[300px] overflow-y-auto bg-[#2a2a3d] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover/font:opacity-100 group-hover/font:visible transition-all z-50 flex flex-col">
                             {(!isAdmin && brandConfig?.typography.fonts) ? (
                                 brandConfig.typography.fonts.map(font => (
-                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors font-medium">
+                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors font-medium" style={{ fontFamily: font }}>
                                         {font} <span className="text-[10px] text-violet-400 ml-1 rounded-sm bg-violet-400/10 px-1 py-0.5">Brand</span>
                                     </button>
                                 ))
                             ) : (
-                                ['Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'].map(font => (
-                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                                GOOGLE_FONTS.slice(0, 20).map(font => (
+                                    <button key={font} onClick={() => fabricRef.current?.updateFontFamily(font)} className="text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors" style={{ fontFamily: font }}>
                                         {font}
                                     </button>
                                 ))
@@ -153,12 +155,75 @@ export default function ContextToolbar({
                         {isRemovingBg ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Remove BG
                     </button>
                     <div className="w-px h-6 bg-white/10 mx-1" />
-                    <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
-                        <Crop size={14} /> Crop
+                    {/* Flip */}
+                    <button onClick={() => fabricRef.current?.flipHorizontal()} className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer" title="Flip Horizontal">
+                        <FlipHorizontal2 size={14} /> Flip
                     </button>
-                    <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
-                        <Layers size={14} /> Opacity
+                    <button onClick={() => fabricRef.current?.flipVertical()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" title="Flip Vertical">
+                        <FlipVertical2 size={14} />
                     </button>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* Opacity */}
+                    <div className="flex items-center gap-2">
+                        <Layers size={14} className="text-white/50" />
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={Math.round((activeObj.opacity ?? 1) * 100)}
+                            onChange={(e) => fabricRef.current?.setOpacity(parseInt(e.target.value))}
+                            className="w-20 accent-violet-500 cursor-pointer"
+                            title="Opacity"
+                        />
+                        <span className="text-xs text-white/50 w-8">{Math.round((activeObj.opacity ?? 1) * 100)}%</span>
+                    </div>
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    {/* Filters dropdown */}
+                    <div className="relative group/filters">
+                        <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors cursor-pointer">
+                            <SlidersHorizontal size={14} /> Filters
+                        </button>
+                        <div className="absolute top-full left-0 mt-2 p-4 w-[240px] bg-[#2a2a3d] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/filters:opacity-100 group-hover/filters:visible transition-all z-50 space-y-3">
+                            <div className="text-xs font-semibold text-white/70 mb-3">Image Adjustments</div>
+                            {[
+                                { label: 'Brightness', type: 'Brightness', min: -100, max: 100 },
+                                { label: 'Contrast', type: 'Contrast', min: -100, max: 100 },
+                                { label: 'Saturation', type: 'Saturation', min: -100, max: 100 },
+                                { label: 'Blur', type: 'Blur', min: 0, max: 100 },
+                            ].map(filter => (
+                                <div key={filter.type} className="flex items-center gap-2">
+                                    <span className="text-[10px] text-white/50 w-16">{filter.label}</span>
+                                    <input
+                                        type="range"
+                                        min={filter.min}
+                                        max={filter.max}
+                                        defaultValue="0"
+                                        onChange={(e) => fabricRef.current?.applyImageFilter(filter.type, parseInt(e.target.value))}
+                                        className="flex-1 accent-violet-500 cursor-pointer h-1"
+                                    />
+                                </div>
+                            ))}
+                            <div className="h-px bg-white/10 my-2" />
+                            <div className="text-xs font-semibold text-white/70 mb-2">Presets</div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {[
+                                    { label: 'B&W', action: () => fabricRef.current?.applyImageFilter('Grayscale', 1) },
+                                    { label: 'Sepia', action: () => fabricRef.current?.applyImageFilter('Sepia', 1) },
+                                    { label: 'Invert', action: () => fabricRef.current?.applyImageFilter('Invert', 1) },
+                                ].map(preset => (
+                                    <button key={preset.label} onClick={preset.action} className="px-2 py-1.5 bg-white/5 hover:bg-white/10 rounded text-[10px] text-white/60 hover:text-white transition-colors">
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => fabricRef.current?.resetImageFilters()}
+                                className="w-full mt-2 text-xs text-white/40 hover:text-white py-1.5 rounded hover:bg-white/5 transition-colors"
+                            >
+                                Reset All
+                            </button>
+                        </div>
+                    </div>
                 </>
             ) : activeObj ? (
                 <span className="text-xs text-white/70">Element selected</span>

@@ -64,6 +64,13 @@ export interface PathObject extends BaseFabricObject {
 
 export type DesignLayerObject = ImageObject | TextObject | PathObject;
 
+export interface CanvasPage {
+    id: string;
+    label: string;
+    canvasJSON: string; // Serialized Fabric canvas JSON
+    preview: string | null; // Base64 thumbnail
+}
+
 export interface DesignWarning {
   id: string;
   type: 'dpi' | 'bleed';
@@ -108,6 +115,10 @@ export interface DesignState {
   brandId?: string | null;
   /** Floating Bounding box coordinates for Contextual UI */
   activeObjectBox?: { left: number, top: number, width: number, height: number } | null;
+  /** Multi-page support */
+  pages: CanvasPage[];
+  /** Currently active page index */
+  currentPageIndex: number;
 }
 
 export interface OpenMageSystemMetadata {
