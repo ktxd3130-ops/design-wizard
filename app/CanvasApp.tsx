@@ -18,6 +18,8 @@ import BottomBar from './components/BottomBar';
 import CheckoutDrawer from './components/CheckoutDrawer';
 import FloatingHUD from './components/FloatingHUD';
 import HeaderDropdowns from './components/HeaderDropdowns';
+import InspectorPanel from './components/InspectorPanel';
+import ContextMenu from './components/ContextMenu';
 import {
     TextPanel, UploadsPanel, ElementsPanel, BrandPanel,
     TemplatesPanel, DrawPanel, ProjectsPanel, AppsPanel, LayersPanel,
@@ -43,6 +45,7 @@ export default function CanvasApp() {
     const [zoom, setZoom] = useState(100);
     const [activeHeaderMenu, setActiveHeaderMenu] = useState<'file' | 'resize' | 'share' | 'analytics' | null>(null);
     const canvasId = useRef(`design-canvas-${Math.random().toString(36).substr(2, 9)}`);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
     // Drawing State
     const [isDrawing, setIsDrawing] = useState(false);
@@ -439,6 +442,12 @@ export default function CanvasApp() {
                                 fabricRef.current.canvas.discardActiveObject();
                                 fabricRef.current.canvas.requestRenderAll();
                             }
+                            setContextMenu(null);
+                        }}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            const activeObj = fabricRef.current?.canvas.getActiveObject() as any;
+                            setContextMenu({ x: e.clientX, y: e.clientY });
                         }}
                         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('ring-2', 'ring-violet-500/50'); }}
                         onDragLeave={(e) => { e.currentTarget.classList.remove('ring-2', 'ring-violet-500/50'); }}
@@ -486,7 +495,28 @@ export default function CanvasApp() {
                         onDuplicatePage={handleDuplicatePage}
                         onDeletePage={handleDeletePage}
                     />
+
+                    {/* Right-Click Context Menu */}
+                    {contextMenu && (
+                        <ContextMenu
+                            x={contextMenu.x}
+                            y={contextMenu.y}
+                            fabricRef={fabricRef}
+                            onClose={() => setContextMenu(null)}
+                            hasSelection={!!designState.activeObjectId}
+                            isGroup={(() => { const obj = fabricRef.current?.canvas.getActiveObject(); return obj?.type === 'group'; })()}
+                            isLocked={(() => { const obj = fabricRef.current?.canvas.getActiveObject() as any; return !!obj?.locked; })()}
+                        />
+                    )}
                 </main>
+
+                {/* Right Inspector Panel */}
+                {designState.activeObjectId && (
+                    <InspectorPanel
+                        fabricRef={fabricRef}
+                        designState={designState}
+                    />
+                )}
             </div>
 
             {/* Checkout Drawer */}

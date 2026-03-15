@@ -99,6 +99,17 @@ export class FabricCanvas {
             this.updateActiveObjectBox();
         });
 
+        // Rotation snapping: hold Shift to snap to 15° increments
+        this.canvas.on('object:rotating', (e) => {
+            if (e.e && (e.e as KeyboardEvent | MouseEvent).shiftKey) {
+                const target = e.target;
+                if (target) {
+                    const angle = target.angle || 0;
+                    target.set('angle', Math.round(angle / 15) * 15);
+                }
+            }
+        });
+
         this.canvas.on('mouse:down', (opt) => {
             if (this.isSpacePan && opt.e) {
                 this.isDragging = true;
@@ -285,9 +296,9 @@ export class FabricCanvas {
                 case 'g':
                     if (isCmdCtrl) {
                         if (e.shiftKey) {
-                            // Ungroup mock (Fabric 6 handles grouping differently, omitting for MVP unless requested)
+                            this.ungroupSelected();
                         } else {
-                            // Group mock
+                            this.groupSelected();
                         }
                         e.preventDefault();
                     }
@@ -1379,5 +1390,80 @@ endobj
         this.canvas.backgroundColor = '#ffffff';
         this.canvas.requestRenderAll();
         this.syncToStore();
+    }
+
+    // ── Grouping Methods ───────────────────────────────────────
+
+    public groupSelected() {
+        const activeSelection = this.canvas.getActiveObject();
+        if (!activeSelection || activeSelection.type !== 'activeSelection') return;
+
+        const objects = (activeSelection as fabric.ActiveSelection).getObjects();
+        if (objects.length < 2) return;
+
+        // Remove objects from canvas
+        this.canvas.discardActiveObject();
+        objects.forEach(obj => this.canvas.remove(obj));
+
+        // Create group
+        const group = new fabric.Group(objects);
+        (group as any).id = crypto.randomUUID();
+
+        this.canvas.add(group);
+        this.canvas.setActiveObject(group);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public ungroupSelected() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj || activeObj.type !== 'group') return;
+
+        const group = activeObj as fabric.Group;
+        const items = group.getObjects();
+        const groupLeft = group.left || 0;
+        const groupTop = group.top || 0;
+
+        this.canvas.remove(group);
+
+        items.forEach(obj => {
+            obj.set({
+                left: (obj.left || 0) + groupLeft + (group.width || 0) / 2,
+                top: (obj.top || 0) + groupTop + (group.height || 0) / 2,
+            });
+            obj.setCoords();
+            this.canvas.add(obj);
+        });
+
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    // ── Layer Ordering Methods ─────────────────────────────────
+
+    public bringToFront() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+        this.canvas.bringObjectToFront(activeObj);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public sendToBack() {
+        const activeObj = this.canvas.getActiveObject();
+        if (!activeObj) return;
+        this.canvas.sendObjectToBack(activeObj);
+        this.canvas.requestRenderAll();
+        this.syncToStore();
+    }
+
+    public duplicateSelected() {
+        this.copy().then(() => this.paste());
+    }
+
+    public setBackgroundColor(color: string) {
+        this.canvas.backgroundColor = color;
+        this.canvas.requestRenderAll();
+        useDesignStore.getState().syncCanvasState({ backgroundColor: color });
     }
 }

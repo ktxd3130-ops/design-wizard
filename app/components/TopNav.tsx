@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Sparkles, Download, Undo2, Redo2, Share2,
-    Cloud, CheckCircle2, MessageSquare, BarChart2, Shield, Plus
+    Cloud, CheckCircle2, Loader2, MessageSquare, BarChart2, Shield, Plus
 } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { BrandConfig } from '@/core/config';
@@ -30,6 +30,38 @@ export default function TopNav({
     setActiveHeaderMenu,
     onReviewClick,
 }: TopNavProps) {
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+    const [showSavedText, setShowSavedText] = useState(false);
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const savedTextRef = useRef<NodeJS.Timeout | null>(null);
+    const isInitialMount = useRef(true);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        setSaveStatus('saving');
+        setShowSavedText(false);
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (savedTextRef.current) clearTimeout(savedTextRef.current);
+
+        debounceRef.current = setTimeout(() => {
+            setSaveStatus('saved');
+            setShowSavedText(true);
+            savedTextRef.current = setTimeout(() => {
+                setShowSavedText(false);
+            }, 2000);
+        }, 1500);
+
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            if (savedTextRef.current) clearTimeout(savedTextRef.current);
+        };
+    }, [designState.objects, designState.backgroundColor]);
+
     return (
         <header className="h-[52px] bg-[#1e1e2e] border-b border-white/10 flex items-center px-4 gap-3 shrink-0 z-20">
             {/* Left cluster */}
@@ -47,8 +79,22 @@ export default function TopNav({
             <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-3">
                 <button onClick={() => fabricRef.current?.undo()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" aria-label="Undo" title="Undo"><Undo2 size={16} /></button>
                 <button onClick={() => fabricRef.current?.redo()} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" aria-label="Redo" title="Redo"><Redo2 size={16} /></button>
-                <div className="flex items-center gap-1.5 px-2 ml-1 text-white/40" title="Changes saved to cloud">
-                    <Cloud size={16} /> <CheckCircle2 size={10} className="absolute ml-2.5 mt-2.5 bg-[#1e1e2e] rounded-full text-white" />
+                <div className="flex items-center gap-1.5 px-2 ml-1 text-white/40" title={saveStatus === 'saving' ? 'Saving changes...' : saveStatus === 'saved' ? 'Changes saved to cloud' : 'Auto-save enabled'}>
+                    {saveStatus === 'saving' ? (
+                        <>
+                            <Cloud size={16} />
+                            <Loader2 size={10} className="absolute ml-2.5 mt-2.5 animate-spin text-white/40" />
+                            <span className="text-xs text-white/40">Saving...</span>
+                        </>
+                    ) : saveStatus === 'saved' && showSavedText ? (
+                        <>
+                            <Cloud size={16} className="text-green-400/70" />
+                            <CheckCircle2 size={10} className="absolute ml-2.5 mt-2.5 bg-[#1e1e2e] rounded-full text-green-400/70" />
+                            <span className="text-xs text-green-400/70">Saved</span>
+                        </>
+                    ) : (
+                        <Cloud size={16} />
+                    )}
                 </div>
             </div>
 

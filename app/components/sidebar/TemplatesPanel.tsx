@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Search, Layers } from 'lucide-react';
 import { FabricCanvas } from '@/core/FabricCanvas';
 import { HC_BRANDS_CATALOG } from '@/core/templates';
@@ -11,6 +12,8 @@ interface TemplatesPanelProps {
 }
 
 export function TemplatesPanel({ fabricRef, templateSearchQuery, setTemplateSearchQuery }: TemplatesPanelProps) {
+    const [hoveredItem, setHoveredItem] = useState<{ id: string, name: string, image?: string, width: number, height: number, rect: DOMRect } | null>(null);
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <div className="p-4 border-b border-white/5 space-y-4 shrink-0 bg-[#252536] z-10 relative">
@@ -44,6 +47,8 @@ export function TemplatesPanel({ fabricRef, templateSearchQuery, setTemplateSear
                                 {filteredItems.map(item => (
                                     <button
                                         key={item.id}
+                                        onMouseEnter={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setHoveredItem({ id: item.id, name: item.name, image: item.image, width: item.width, height: item.height, rect }); }}
+                                        onMouseLeave={() => setHoveredItem(null)}
                                         onClick={async () => {
                                             fabricRef.current?.resizeWorkspace(item.width, item.height);
                                             if (item.payload) {
@@ -73,6 +78,23 @@ export function TemplatesPanel({ fabricRef, templateSearchQuery, setTemplateSear
                     );
                 })}
             </div>
+
+            {hoveredItem && hoveredItem.image && (
+                <div
+                    className="fixed z-[100] bg-[#1e1e2e] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden pointer-events-none"
+                    style={{
+                        left: hoveredItem.rect.right + 12,
+                        top: Math.min(hoveredItem.rect.top, window.innerHeight - 340),
+                        width: 280,
+                    }}
+                >
+                    <img src={hoveredItem.image} alt={hoveredItem.name} className="w-full h-48 object-cover" />
+                    <div className="p-3 space-y-1">
+                        <p className="text-sm font-semibold text-white/90">{hoveredItem.name}</p>
+                        <p className="text-[10px] text-white/40 font-mono">{hoveredItem.width} &times; {hoveredItem.height} px</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
