@@ -50,6 +50,8 @@ export function TemplatesPanel({ fabricRef, templateSearchQuery, setTemplateSear
                                         onMouseEnter={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setHoveredItem({ id: item.id, name: item.name, image: item.image, width: item.width, height: item.height, rect }); }}
                                         onMouseLeave={() => setHoveredItem(null)}
                                         onClick={async () => {
+                                            // Clear canvas before loading new template
+                                            fabricRef.current?.clearCanvas();
                                             fabricRef.current?.resizeWorkspace(item.width, item.height);
                                             if (item.payload) {
                                                 await fabricRef.current?.injectTemplate(item.payload, item.width, item.height);

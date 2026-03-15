@@ -906,12 +906,14 @@ export class FabricCanvas {
      * Scales a pre-defined layout to perfectly fit the current dynamic CanvasDimensions representing a specific SKU
      */
     public async injectTemplate(templateJSON: any, originalTemplateWidth: number, originalTemplateHeight: number) {
-        const currentWidth = this.canvas.getWidth();
-        const currentHeight = this.canvas.getHeight();
+        // Use logical base dimensions (not zoomed pixel dimensions) to avoid double-scaling
+        const logicalWidth = this.baseWidth;
+        const logicalHeight = this.baseHeight;
 
-        // Auto-calculate scale to fit without skewing
-        const scaleX = currentWidth / originalTemplateWidth;
-        const scaleY = currentHeight / originalTemplateHeight;
+        // Scale factor maps template coordinates → logical workspace coordinates
+        // When resizeWorkspace was called with the same dimensions, this is 1:1
+        const scaleX = logicalWidth / originalTemplateWidth;
+        const scaleY = logicalHeight / originalTemplateHeight;
         const scale = Math.min(scaleX, scaleY);
 
         // Extract objects array from template payload (supports both { objects: [...] } and plain [...])
@@ -923,19 +925,21 @@ export class FabricCanvas {
         // Use fabric deserializer
         const enlivenedObjects = await fabric.util.enlivenObjects(hydratedJSON);
 
+        // Center offset if template aspect ratio differs from workspace
+        const xOffset = (logicalWidth - (originalTemplateWidth * scale)) / 2;
+        const yOffset = (logicalHeight - (originalTemplateHeight * scale)) / 2;
+
         enlivenedObjects.forEach((obj: any) => {
-            // Apply responsive scale factor
-            obj.scaleX = (obj.scaleX || 1) * scale;
-            obj.scaleY = (obj.scaleY || 1) * scale;
-            obj.left = (obj.left || 0) * scale;
-            obj.top = (obj.top || 0) * scale;
+            // Apply responsive scale factor (1:1 when dimensions match)
+            if (scale !== 1) {
+                obj.scaleX = (obj.scaleX || 1) * scale;
+                obj.scaleY = (obj.scaleY || 1) * scale;
+                obj.left = (obj.left || 0) * scale;
+                obj.top = (obj.top || 0) * scale;
+            }
 
-            // Re-center offset if template was smaller
-            const xOffset = (currentWidth - (originalTemplateWidth * scale)) / 2;
-            const yOffset = (currentHeight - (originalTemplateHeight * scale)) / 2;
-
-            obj.left += xOffset;
-            obj.top += yOffset;
+            obj.left = (obj.left || 0) + xOffset;
+            obj.top = (obj.top || 0) + yOffset;
 
             this.canvas.add(obj);
         });
