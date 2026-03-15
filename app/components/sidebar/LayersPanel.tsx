@@ -18,6 +18,7 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
     const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
     const layers = designState.objects.slice().reverse();
 
@@ -103,6 +104,49 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
         }
     };
 
+    const handleDragStart = (idx: number) => {
+        setDraggedIdx(idx);
+    };
+
+    const handleDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        setDragOverIdx(idx);
+    };
+
+    const handleDrop = (dropIdx: number) => {
+        if (draggedIdx === null || draggedIdx === dropIdx || !fabricRef.current) {
+            setDraggedIdx(null);
+            setDragOverIdx(null);
+            return;
+        }
+
+        // layers[] is reversed (top-first), so convert back to canvas z-order indices
+        const canvasObjects = fabricRef.current.canvas.getObjects().filter((o: any) => !o.isGuideLine);
+        const totalCount = canvasObjects.length;
+        // In the reversed layers array, index 0 = top of stack = highest z-index
+        const fromCanvasIdx = totalCount - 1 - draggedIdx;
+        const toCanvasIdx = totalCount - 1 - dropIdx;
+
+        const obj = canvasObjects[fromCanvasIdx];
+        if (obj) {
+            // Remove and re-insert at the target z-index
+            fabricRef.current.canvas.remove(obj);
+            // Clamp insertion index
+            const allObjects = fabricRef.current.canvas.getObjects();
+            const insertIdx = Math.max(0, Math.min(toCanvasIdx, allObjects.length));
+            fabricRef.current.canvas.insertAt(insertIdx, obj);
+            sync();
+        }
+
+        setDraggedIdx(null);
+        setDragOverIdx(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIdx(null);
+        setDragOverIdx(null);
+    };
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <div className="p-6 border-b border-[var(--ui-5)] bg-[var(--surface-2)] z-10 shrink-0 flex items-center justify-between">
@@ -117,15 +161,20 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
                     return (
                         <div
                             key={layer.id}
+                            draggable
+                            onDragStart={() => handleDragStart(idx)}
+                            onDragOver={(e) => handleDragOver(e, idx)}
+                            onDrop={() => handleDrop(idx)}
+                            onDragEnd={handleDragEnd}
                             onClick={() => handleSelectLayer(layer.id)}
                             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all cursor-pointer group ${
                                 isActive
                                     ? 'bg-violet-500/15 border-violet-500/30'
                                     : 'bg-white/[0.02] border-transparent hover:bg-[var(--ui-5)] hover:border-[var(--ui-5)]'
-                            }`}
+                            } ${draggedIdx === idx ? 'opacity-40' : ''} ${dragOverIdx === idx && draggedIdx !== idx ? 'border-violet-500 border-dashed' : ''}`}
                         >
                             {/* Drag handle */}
-                            <div className="text-white/20 group-hover:text-[var(--ui-40)] cursor-grab">
+                            <div className="text-white/20 group-hover:text-[var(--ui-40)] cursor-grab active:cursor-grabbing">
                                 <GripVertical size={12} />
                             </div>
 
