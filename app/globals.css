@@ -53,9 +53,10 @@
   color-scheme: light;
 }
 
-* {
-  margin: 0;
-  padding: 0;
+/* box-sizing reset only — Tailwind's preflight handles margin/padding */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 

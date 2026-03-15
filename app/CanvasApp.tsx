@@ -389,12 +389,12 @@ export default function CanvasApp() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* Icon Rail */}
-                <nav className="w-[72px] bg-[var(--surface-1)] border-r border-[var(--ui-5)] flex flex-col items-center py-3 gap-1.5 shrink-0 overflow-y-auto">
+                <nav className="w-[76px] bg-[var(--surface-1)] border-r border-[var(--ui-5)] flex flex-col items-center py-4 gap-3 shrink-0 overflow-y-auto">
                     {sidebarItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => togglePanel(item.id)}
-                            className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === item.id ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
+                            className={`flex flex-col items-center gap-1 w-[56px] py-3 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === item.id ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
                         >
                             {item.icon}
                             {item.label}
@@ -403,7 +403,7 @@ export default function CanvasApp() {
                     <div className="flex-1" />
                     <button
                         onClick={() => togglePanel('layers')}
-                        className={`flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === 'layers' ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
+                        className={`flex flex-col items-center gap-1 w-[56px] py-3 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${activePanel === 'layers' ? 'bg-violet-600/20 text-violet-300' : 'text-[var(--ui-40)] hover:text-[var(--ui-70)] hover:bg-[var(--ui-5)]'}`}
                     >
                         <Layers size={20} />
                         Layers
