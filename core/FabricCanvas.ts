@@ -473,15 +473,17 @@ export class FabricCanvas {
         });
     }
 
-    private syncToStore() {
+    public syncToStore() {
         // Generate the serialized state with strict typing
         const warnings: any[] = [];
         const safeZone = useDesignStore.getState().state.safeZoneMargin;
 
         const objects = this.canvas.getObjects().map((obj: any) => {
-            if (obj.strokeDashArray) return null; // Ignore guide lines
+            if (obj.isGuideLine) return null; // Ignore snapping guide lines
 
-            const objId = obj.id || crypto.randomUUID();
+            // Persist the ID back to the fabric object so it stays stable across syncs
+            if (!obj.id) obj.id = crypto.randomUUID();
+            const objId = obj.id;
             let qualityWarning = false;
 
             if (obj.type === 'image') {
@@ -534,8 +536,10 @@ export class FabricCanvas {
                 scaleX: 1, // Normalized
                 scaleY: 1, // Normalized
                 opacity: obj.opacity,
+                visible: obj.visible !== false,
                 zIndex: this.canvas.getObjects().indexOf(obj),
                 locked: obj.locked || false,
+                name: obj.name,
                 text: obj.text,
                 fontFamily: obj.fontFamily,
                 fontSize: obj.fontSize,

@@ -34,8 +34,9 @@ export class SnappingEngine {
             selectable: false,
             evented: false,
             strokeDashArray: [5, 5],
-            opacity: 0.8
-        });
+            opacity: 0.8,
+            isGuideLine: true,
+        } as any);
         this.canvas.add(line);
         this.guideLines.push(line);
     }

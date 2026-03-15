@@ -14,6 +14,7 @@ export interface BaseFabricObject {
   scaleX: number;
   scaleY: number;
   opacity: number;
+  visible?: boolean;
   zIndex: number;
   /** Architect: Object Locking */
   locked?: boolean;

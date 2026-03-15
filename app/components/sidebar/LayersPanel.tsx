@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { DesignState } from '@/core/types';
 import { FabricCanvas } from '@/core/FabricCanvas';
+import { useDesignStore } from '@/core/storage';
 
 interface LayersPanelProps {
     designState: DesignState;
@@ -43,58 +44,62 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
     };
 
     const handleFinishRename = (id: string) => {
-        // Update name on fabric object
-        if (fabricRef.current) {
-            const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
-            if (obj) {
-                (obj as any).name = editName;
-            }
+        const obj = findObj(id);
+        if (obj) {
+            (obj as any).name = editName;
+            sync();
         }
         setEditingId(null);
     };
 
+    const findObj = (id: string) =>
+        fabricRef.current?.canvas.getObjects().find((o: any) => o.id === id);
+
+    const sync = () => {
+        fabricRef.current?.canvas.requestRenderAll();
+        // Force store update so layers panel re-renders
+        (fabricRef.current as any)?.syncToStore?.();
+    };
+
     const handleToggleVisibility = (id: string) => {
-        if (!fabricRef.current) return;
-        const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
-        if (obj) {
-            obj.set('visible', !obj.visible);
-            fabricRef.current.canvas.requestRenderAll();
-        }
+        const obj = findObj(id);
+        if (!obj) return;
+        obj.set('visible', !obj.visible);
+        sync();
     };
 
     const handleSelectLayer = (id: string) => {
         if (!fabricRef.current) return;
-        const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
+        const obj = findObj(id);
         if (obj) {
             fabricRef.current.canvas.setActiveObject(obj);
+            // Programmatic selection doesn't fire canvas events, so update store directly
+            useDesignStore.getState().syncCanvasState({ activeObjectId: id });
             fabricRef.current.canvas.requestRenderAll();
         }
     };
 
     const handleMoveUp = (id: string) => {
-        if (!fabricRef.current) return;
-        const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
+        const obj = findObj(id);
         if (obj) {
-            fabricRef.current.canvas.bringObjectForward(obj);
-            fabricRef.current.canvas.requestRenderAll();
+            fabricRef.current?.canvas.bringObjectForward(obj);
+            sync();
         }
     };
 
     const handleMoveDown = (id: string) => {
-        if (!fabricRef.current) return;
-        const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
+        const obj = findObj(id);
         if (obj) {
-            fabricRef.current.canvas.sendObjectBackwards(obj);
-            fabricRef.current.canvas.requestRenderAll();
+            fabricRef.current?.canvas.sendObjectBackwards(obj);
+            sync();
         }
     };
 
     const handleDelete = (id: string) => {
-        if (!fabricRef.current) return;
-        const obj = fabricRef.current.canvas.getObjects().find((o: any) => o.id === id);
+        const obj = findObj(id);
         if (obj) {
-            fabricRef.current.canvas.remove(obj);
-            fabricRef.current.canvas.requestRenderAll();
+            fabricRef.current?.canvas.remove(obj);
+            sync();
         }
     };
 
@@ -107,7 +112,7 @@ export function LayersPanel({ designState, fabricRef }: LayersPanelProps) {
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
                 {layers.map((layer: any, idx) => {
                     const isActive = layer.id === designState.activeObjectId;
-                    const isHidden = layer.opacity === 0;
+                    const isHidden = layer.visible === false;
 
                     return (
                         <div
