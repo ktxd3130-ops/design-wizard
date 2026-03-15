@@ -7,3 +7,4 @@ export { DrawPanel } from './DrawPanel';
 export { ProjectsPanel } from './ProjectsPanel';
 export { AppsPanel } from './AppsPanel';
 export { LayersPanel } from './LayersPanel';
+export { PositionPanel } from './PositionPanel';

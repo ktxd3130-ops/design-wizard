@@ -19,6 +19,8 @@ export interface ContextToolbarProps {
     isAdmin: boolean;
     isRemovingBg: boolean;
     onRemoveBg: () => void;
+    activePanel: string | null;
+    setActivePanel: (panel: any) => void;
 }
 
 export default function ContextToolbar({
@@ -28,6 +30,8 @@ export default function ContextToolbar({
     isAdmin,
     isRemovingBg,
     onRemoveBg,
+    activePanel,
+    setActivePanel,
 }: ContextToolbarProps) {
     const activeObj = designState.objects.find(o => o.id === designState.activeObjectId) as any;
     const isTextSelected = activeObj && ['textbox', 'text', 'i-text'].includes(activeObj.type);
@@ -231,8 +235,19 @@ export default function ContextToolbar({
                 <span className="text-xs text-white/30 hidden md:inline">Select an element to edit its properties</span>
             )}
 
-            {/* Right side: warnings */}
+            {/* Right side: panel tabs + warnings */}
             <div className="ml-auto flex items-center gap-2">
+                {activeObj && (
+                    <>
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+                        <button
+                            onClick={() => setActivePanel(activePanel === 'position' ? null : 'position')}
+                            className={`text-sm px-3 py-1 rounded-full transition-colors cursor-pointer ${activePanel === 'position' ? 'bg-violet-600/30 text-violet-300 border border-violet-500/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                        >
+                            Position
+                        </button>
+                    </>
+                )}
                 {designState.warnings.length > 0 && (
                     <div className="flex items-center gap-1.5 bg-red-500/20 text-red-300 px-3 py-1 rounded-lg text-xs font-medium border border-red-500/30">
                         <AlertTriangle size={12} /> {designState.warnings.length} Warning{designState.warnings.length > 1 ? 's' : ''}

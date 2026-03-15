@@ -18,14 +18,14 @@ import BottomBar from './components/BottomBar';
 import CheckoutDrawer from './components/CheckoutDrawer';
 import FloatingHUD from './components/FloatingHUD';
 import HeaderDropdowns from './components/HeaderDropdowns';
-import InspectorPanel from './components/InspectorPanel';
 import ContextMenu from './components/ContextMenu';
 import {
     TextPanel, UploadsPanel, ElementsPanel, BrandPanel,
     TemplatesPanel, DrawPanel, ProjectsPanel, AppsPanel, LayersPanel,
+    PositionPanel,
 } from './components/sidebar';
 
-type SidebarPanel = 'templates' | 'elements' | 'text' | 'brand' | 'uploads' | 'draw' | 'projects' | 'apps' | 'layers' | null;
+type SidebarPanel = 'templates' | 'elements' | 'text' | 'brand' | 'uploads' | 'draw' | 'projects' | 'apps' | 'layers' | 'position' | null;
 
 export default function CanvasApp() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -379,6 +379,8 @@ export default function CanvasApp() {
                 isAdmin={isAdmin}
                 isRemovingBg={isRemovingBg}
                 onRemoveBg={handleRemoveBgMock}
+                activePanel={activePanel}
+                setActivePanel={setActivePanel}
             />
 
             {/* Main Content Area */}
@@ -418,6 +420,7 @@ export default function CanvasApp() {
                         {activePanel === 'projects' && <ProjectsPanel />}
                         {activePanel === 'apps' && <AppsPanel fabricRef={fabricRef} genFillPrompt={genFillPrompt} setGenFillPrompt={setGenFillPrompt} isGenFillActive={isGenFillActive} onGenFill={handleGenFillMock} />}
                         {activePanel === 'layers' && <LayersPanel designState={designState} fabricRef={fabricRef} />}
+                        {activePanel === 'position' && <PositionPanel fabricRef={fabricRef} designState={designState} />}
                     </aside>
                 </div>
 
@@ -510,13 +513,6 @@ export default function CanvasApp() {
                     )}
                 </main>
 
-                {/* Right Inspector Panel */}
-                {designState.activeObjectId && (
-                    <InspectorPanel
-                        fabricRef={fabricRef}
-                        designState={designState}
-                    />
-                )}
             </div>
 
             {/* Checkout Drawer */}
